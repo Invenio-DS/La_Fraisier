@@ -2,12 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>L'fraisier Riche - Menú Pro</title>
+    <title>L'fraisier Riche - MenÃº Pro</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            src: url('./Handelson-Four.ttf') format('truetype');
-            font-weight: normal; font-style: normal;
+            /* Cambiamos la extensiÃ³n a .otf y el formato a 'opentype' */
+            src: url('./Handelson-Four.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
         }
 
         body { 
@@ -50,7 +52,7 @@
         </div>
 
     <script>
-        // URL de tu pestaña "Menú" publicada como CSV
+        // URL de tu pestaÃ±a "MenÃº" publicada como CSV
         const sheetURL = "TU_URL_DE_GOOGLE_SHEETS_CSV_AQUI";
 
         // Formateador profesional: 1.234,56
@@ -73,7 +75,7 @@
                 filas.forEach((linea, i) => {
                     const col = linea.split(",");
                     if (col.length >= 4) {
-                        // Limpieza de strings para convertirlos a números operables
+                        // Limpieza de strings para convertirlos a nÃºmeros operables
                         // Quita puntos de miles y cambia coma decimal por punto
                         const refRaw = col[1].replace(/\./g, '').replace(',', '.');
                         const tasaRaw = col[3].replace(/\./g, '').replace(',', '.');
@@ -91,16 +93,16 @@
                         }
                     }
                 });
-                console.log("Sincronización exitosa con Tasa BCV.");
+                console.log("SincronizaciÃ³n exitosa con Tasa BCV.");
             } catch (e) {
-                console.error("Error de conexión:", e);
+                console.error("Error de conexiÃ³n:", e);
             }
         }
 
-        // Ejecución inicial
+        // EjecuciÃ³n inicial
         actualizarMenu();
 
-        // Refresco automático cada 10 minutos
+        // Refresco automÃ¡tico cada 10 minutos
         setInterval(actualizarMenu, 600000);
     </script>
 </body>
