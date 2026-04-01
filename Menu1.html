@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>L'fraisier Riche - Menú Pro</title>
+    <style>
+        @font-face {
+            font-family: 'HandelsonFour';
+            src: url('./Handelson-Four.ttf') format('truetype');
+            font-weight: normal; font-style: normal;
+        }
+
+        body { 
+            margin: 0; padding: 0; background-color: #000; 
+            display: flex; justify-content: center; align-items: center; 
+            min-height: 100vh; overflow: hidden;
+        }
+
+        .menu-wrapper {
+            position: relative;
+            width: 100vw; height: 56.25vw; 
+            max-width: 1920px; max-height: 1080px;
+            background: url('./Menu_Limpio.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        .dato-dinamico {
+            position: absolute;
+            font-family: 'HandelsonFour', sans-serif;
+            color: #FFFFFF;
+            font-size: 2.1vw;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Coordenadas 1920x1080 */
+        .col-ref { left: 74.4%; }
+        .col-bs  { left: 88.3%; }
+        
+        /* Ajuste de filas */
+        .fila-0 { top: 30.1%; } .fila-1 { top: 37.1%; } .fila-2 { top: 44.1%; }
+        .fila-3 { top: 71.0%; } .fila-4 { top: 78.0%; }
+    </style>
+</head>
+<body>
+
+    <div class="menu-wrapper" id="menu">
+        </div>
+
+    <script>
+        // URL de tu pestaña "Menú" publicada como CSV
+        const sheetURL = "TU_URL_DE_GOOGLE_SHEETS_CSV_AQUI";
+
+        // Formateador profesional: 1.234,56
+        const formatVE = (val) => {
+            return new Intl.NumberFormat('de-DE', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(val);
+        };
+
+        async function actualizarMenu() {
+            try {
+                const res = await fetch(sheetURL);
+                const data = await res.text();
+                const filas = data.split(/\r?\n/).slice(1);
+                
+                const contenedor = document.getElementById('menu');
+                contenedor.innerHTML = "";
+
+                filas.forEach((linea, i) => {
+                    const col = linea.split(",");
+                    if (col.length >= 4) {
+                        // Limpieza de strings para convertirlos a números operables
+                        // Quita puntos de miles y cambia coma decimal por punto
+                        const refRaw = col[1].replace(/\./g, '').replace(',', '.');
+                        const tasaRaw = col[3].replace(/\./g, '').replace(',', '.');
+                        
+                        const ref = parseFloat(refRaw);
+                        const tasa = parseFloat(tasaRaw);
+
+                        if (!isNaN(ref) && !isNaN(tasa)) {
+                            const calculoBs = ref * tasa;
+
+                            contenedor.innerHTML += `
+                                <div class="dato-dinamico col-ref fila-${i}">${col[1]}</div>
+                                <div class="dato-dinamico col-bs fila-${i}">${formatVE(calculoBs)}</div>
+                            `;
+                        }
+                    }
+                });
+                console.log("Sincronización exitosa con Tasa BCV.");
+            } catch (e) {
+                console.error("Error de conexión:", e);
+            }
+        }
+
+        // Ejecución inicial
+        actualizarMenu();
+
+        // Refresco automático cada 10 minutos
+        setInterval(actualizarMenu, 600000);
+    </script>
+</body>
+</html>
