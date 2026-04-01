@@ -51,58 +51,75 @@
         </div>
 
     <script>
-        // URL de la Pestaña 2
-        const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
+    // URL de la Pestaña 2 (Verificada)
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
 
-        const formatVE = (val) => {
-            return new Intl.NumberFormat('de-DE', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(val);
-        };
+    // Formateador profesional: 1.234,56
+    const formatVE = (val) => {
+        return new Intl.NumberFormat('de-DE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(val);
+    };
 
-        async function cargarMenu() {
-            try {
-                const res = await fetch(sheetURL);
-                if (!res.ok) throw new Error("Error de red");
+    async function cargarMenu() {
+        console.log("INVENIO: Iniciando sincronización...");
+        try {
+            // Añadimos un timestamp para evitar que el navegador use datos viejos (caché)
+            const response = await fetch(`${sheetURL}&time=${new Date().getTime()}`);
+            if (!response.ok) throw new Error("No se pudo conectar con Google Sheets");
+
+            const csvText = await response.text();
+            console.log("Datos recibidos correctamente.");
+
+            const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+            const datos = lineas.slice(1); // Omitimos la fila de encabezado
+            
+            const contenedor = document.getElementById('menu-container');
+            let htmlFinal = "";
+
+            datos.forEach((linea, i) => {
+                // Dividimos por coma, pero limpiamos espacios extras
+                const col = linea.split(",").map(c => c.trim());
                 
-                const csvText = await res.text();
-                // Limpieza manual segura de líneas
-                const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
-                const datos = lineas.slice(1); // Omitir cabecera
-                
-                const contenedor = document.getElementById('menu-container');
-                let htmlFinal = "";
+                if (col.length >= 4) {
+                    // Procesamos REF (Columna B / Índice 1)
+                    // Quitamos puntos de miles y cambiamos coma por punto para calcular
+                    const refLimpio = col[1].replace(/\./g, '').replace(',', '.');
+                    const ref = parseFloat(refRaw = refLimpio);
 
-                datos.forEach((linea, i) => {
-                    const col = linea.split(",");
-                    if (col.length >= 4) {
-                        // Procesamiento numérico ultra-seguro (sin eval ni funciones dinámicas)
-                        const ref = parseFloat(col[1].replace(/\./g, '').replace(',', '.'));
-                        const tasa = parseFloat(col[3].replace(/\./g, '').replace(',', '.'));
+                    // Procesamos TASA (Columna D / Índice 3)
+                    const tasaLimpia = col[3].replace(/\./g, '').replace(',', '.');
+                    const tasa = parseFloat(tasaRaw = tasaLimpia);
+
+                    if (!isNaN(ref) && !isNaN(tasa)) {
+                        const totalBs = ref * tasa;
                         
-                        if (!isNaN(ref) && !isNaN(tasa)) {
-                            const totalBs = ref * tasa;
-                            
-                            // Construimos el string de HTML para evitar inyecciones múltiples
-                            htmlFinal += `<div class="dato-dinamico col-ref fila-${i}">${col[1]}</div>`;
-                            htmlFinal += `<div class="dato-dinamico col-bs fila-${i}">${formatVE(totalBs)}</div>`;
-                        }
+                        // Generamos el HTML con las coordenadas que ya definimos
+                        htmlFinal += `<div class="dato-dinamico col-ref fila-${i}">${col[1]}</div>`;
+                        htmlFinal += `<div class="dato-dinamico col-bs fila-${i}">${formatVE(totalBs)}</div>`;
+                    } else {
+                        console.warn(`Línea ${i+1}: Datos numéricos inválidos`, {ref, tasa});
                     }
-                });
-                
+                }
+            });
+
+            if (htmlFinal === "") {
+                console.error("No se generó ningún precio. Revisa las columnas en Sheets.");
+            } else {
                 contenedor.innerHTML = htmlFinal;
-                console.log("Menú INVENIO actualizado correctamente.");
-
-            } catch (err) {
-                console.error("Error cargando el menú:", err);
+                console.log("¡Precios renderizados con éxito!");
             }
-        }
 
-        // Ejecutar
-        cargarMenu();
-        // Sincronizar cada 10 min
-        setInterval(cargarMenu, 600000);
-    </script>
+        } catch (err) {
+            console.error("Error crítico en INVENIO:", err);
+        }
+    }
+
+    // Ejecución inmediata
+    cargarMenu();
+    // Refresco cada 5 minutos
+    setInterval(cargarMenu, 300000);
+</script>
 </body>
 </html>
