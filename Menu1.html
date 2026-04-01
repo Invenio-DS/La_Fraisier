@@ -2,31 +2,30 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menú Digital</title>
+    <title>INVENIO - Digital Signage</title>
     <style>
-        /* 1. CARGA DE FUENTE .OTF */
         @font-face {
             font-family: 'HandelsonFour';
             src: url('./handelson-Four.otf') format('opentype');
-            font-weight: normal;
-            font-style: normal;
+            font-weight: normal; font-style: normal;
         }
 
         body { 
-            margin: 0; padding: 0; background-color: #000; 
+            margin: 0; padding: 0; background-color: #1a1a1a; 
             display: flex; justify-content: center; align-items: center; 
             min-height: 100vh; overflow: hidden;
         }
 
-        /* 2. REFERENCIA A TU IMAGEN menu1.png */
+        /* Forzamos que el contenedor sea visible */
         .menu-wrapper {
             position: relative;
-            width: 100vw;
-            height: 56.25vw; /* Mantiene 16:9 */
-            max-width: 1920px;
-            max-height: 1080px;
-            background: url('./Menu1.png') no-repeat center center;
+            width: 100vw; height: 56.25vw; 
+            max-width: 1920px; max-height: 1080px;
+            background-image: url('Menu1.png') !important;
             background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 1;
         }
 
         .dato-dinamico {
@@ -34,28 +33,25 @@
             font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
             font-size: 2.1vw;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
             white-space: nowrap;
+            z-index: 2;
         }
 
         /* Coordenadas */
         .col-ref { left: 74.4%; }
         .col-bs  { left: 88.3%; }
-        
-        .fila-0 { top: 30.1%; }
-        .fila-1 { top: 37.1%; }
-        .fila-2 { top: 44.1%; }
-        .fila-3 { top: 71.0%; }
-        .fila-4 { top: 78.0%; }
+        .fila-0 { top: 30.1%; } .fila-1 { top: 37.1%; } .fila-2 { top: 44.1%; }
+        .fila-3 { top: 71.0%; } .fila-4 { top: 78.0%; }
     </style>
 </head>
 <body>
 
-    <div class="menu-wrapper" id="menu">
+    <div class="menu-wrapper" id="menu-container">
         </div>
 
     <script>
-        // URL con el GID de la pestaña 2 (996245756)
+        // URL de la Pestaña 2
         const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
 
         const formatVE = (val) => {
@@ -65,47 +61,48 @@
             }).format(val);
         };
 
-        async function actualizarMenu() {
+        async function cargarMenu() {
             try {
                 const res = await fetch(sheetURL);
-                const data = await res.text();
+                if (!res.ok) throw new Error("Error de red");
                 
-                // Dividir por líneas y limpiar espacios en blanco
-                const filas = data.split(/\r?\n/).filter(linea => linea.trim() !== "").slice(1);
+                const csvText = await res.text();
+                // Limpieza manual segura de líneas
+                const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+                const datos = lineas.slice(1); // Omitir cabecera
                 
-                const contenedor = document.getElementById('menu');
-                contenedor.innerHTML = "";
+                const contenedor = document.getElementById('menu-container');
+                let htmlFinal = "";
 
-                filas.forEach((linea, i) => {
-                    // Usar una expresión regular para manejar comas dentro de comillas si las hay
+                datos.forEach((linea, i) => {
                     const col = linea.split(",");
-                    
                     if (col.length >= 4) {
-                        // Limpieza: quitamos puntos de miles y cambiamos coma decimal por punto
-                        const refRaw = col[1].replace(/\./g, '').replace(',', '.');
-                        const tasaRaw = col[3].replace(/\./g, '').replace(',', '.');
+                        // Procesamiento numérico ultra-seguro (sin eval ni funciones dinámicas)
+                        const ref = parseFloat(col[1].replace(/\./g, '').replace(',', '.'));
+                        const tasa = parseFloat(col[3].replace(/\./g, '').replace(',', '.'));
                         
-                        const ref = parseFloat(refRaw);
-                        const tasa = parseFloat(tasaRaw);
-
                         if (!isNaN(ref) && !isNaN(tasa)) {
-                            const calculoBs = ref * tasa;
-
-                            contenedor.innerHTML += `
-                                <div class="dato-dinamico col-ref fila-${i}">${col[1]}</div>
-                                <div class="dato-dinamico col-bs fila-${i}">${formatVE(calculoBs)}</div>
-                            `;
+                            const totalBs = ref * tasa;
+                            
+                            // Construimos el string de HTML para evitar inyecciones múltiples
+                            htmlFinal += `<div class="dato-dinamico col-ref fila-${i}">${col[1]}</div>`;
+                            htmlFinal += `<div class="dato-dinamico col-bs fila-${i}">${formatVE(totalBs)}</div>`;
                         }
                     }
                 });
-                console.log("Sincronización exitosa con Pestaña 2.");
-            } catch (e) {
-                console.error("Error de conexión:", e);
+                
+                contenedor.innerHTML = htmlFinal;
+                console.log("Menú INVENIO actualizado correctamente.");
+
+            } catch (err) {
+                console.error("Error cargando el menú:", err);
             }
         }
 
-        actualizarMenu();
-        setInterval(actualizarMenu, 600000);
+        // Ejecutar
+        cargarMenu();
+        // Sincronizar cada 10 min
+        setInterval(cargarMenu, 600000);
     </script>
 </body>
 </html>
