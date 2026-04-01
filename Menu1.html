@@ -28,21 +28,39 @@
             z-index: 1;
         }
 
+        /* 1. Definir la animación de entrada */
+        @keyframes fadeInPrecios {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .dato-dinamico {
             position: absolute;
             font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
             font-size: 2.1vw;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             white-space: nowrap;
-            z-index: 2;
+            
+            /* 2. ALINEACIÓN A LA DERECHA */
+            display: block;
+            text-align: right; 
+            width: 150px; /* Ancho fijo para que el 'right' tenga un eje común */
+            
+            /* 3. APLICAR ANIMACIÓN */
+            animation: fadeInPrecios 0.8s ease-out forwards;
         }
 
-        /* Coordenadas */
-        .col-ref { left: 89%; }
-        .col-bs  { left: 70%; }
-        .fila-0 { top: 30.2%; } .fila-1 { top: 38.1%; } .fila-2 { top: 45.4%; }
-        .fila-3 { top: 70.1%; } .fila-4 { top: 78.1%; }
+        /* Ajustamos el "left" para que el borde derecho coincida con tu diseño */
+        /* Columna B (Ref) - Izquierda */
+        .col-ref { left: 68%; } 
+        
+        /* Columna D (Bs) - Derecha */
+        .col-bs  { left: 82%; }
+
+        /* Filas (Eje Y) */
+        .fila-0 { top: 30.1%; } .fila-1 { top: 37.1%; } .fila-2 { top: 44.1%; }
+        .fila-3 { top: 71.0%; } .fila-4 { top: 78.0%; }
     </style>
 </head>
 <body>
@@ -50,34 +68,13 @@
     <div class="menu-wrapper" id="menu-container">
         </div>
 
-   <script>
-    // URL de tu pestaña "Menu1" (GID: 996245756)
+  <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
 
-    // Función para limpiar y separar CSV correctamente (maneja comas internas)
-    function procesarLineaCSV(linea) {
-        const resultado = [];
-        let celda = "";
-        let entreComillas = false;
-        for (let char of linea) {
-            if (char === '"') entreComillas = !entreComillas;
-            else if (char === ',' && !entreComillas) {
-                resultado.push(celda.trim());
-                celda = "";
-            } else celda += char;
-        }
-        resultado.push(celda.trim());
-        return resultado;
-    }
-
     async function actualizarPrecios() {
-        console.log("INVENIO: Sincronizando datos directos...");
         try {
-            // Buscamos los datos con un "cache bust" para que siempre sean los últimos
-            const res = await fetch(`${sheetURL}&version=${new Date().getTime()}`);
+            const res = await fetch(`${sheetURL}&v=${new Date().getTime()}`);
             const csvText = await res.text();
-            
-            // Dividir por líneas y quitar la cabecera
             const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
             const datos = lineas.slice(1); 
             
@@ -85,36 +82,28 @@
             let htmlFinal = "";
 
             datos.forEach((linea, i) => {
-                const col = procesarLineaCSV(linea);
+                // Función simple para separar comas
+                const col = linea.split(",").map(c => c.replace(/"/g, "").trim());
                 
-                // Verificamos que existan las columnas necesarias
-                // col[1] es la columna B (Ref)
-                // col[3] es la columna D (Bs)
                 if (col.length >= 4) {
-                    const precioRef = col[1];
-                    const precioBs = col[3];
+                    const ref = col[1]; // Columna B
+                    const bs = col[3];  // Columna D
 
-                    // Solo inyectamos si hay datos en Ref
-                    if (precioRef !== "" && precioRef !== undefined) {
-                        htmlFinal += `<div class="dato-dinamico col-ref fila-${i}">${precioRef}</div>`;
-                        htmlFinal += `<div class="dato-dinamico col-bs fila-${i}">${precioBs}</div>`;
+                    if (ref) {
+                        // Inyectamos con retraso escalonado para un efecto visual premium
+                        const delay = i * 0.1; 
+                        htmlFinal += `
+                            <div class="dato-dinamico col-ref fila-${i}" style="animation-delay: ${delay}s">${ref}</div>
+                            <div class="dato-dinamico col-bs fila-${i}" style="animation-delay: ${delay + 0.05}s">${bs}</div>
+                        `;
                     }
                 }
             });
 
-            if (htmlFinal !== "") {
-                contenedor.innerHTML = htmlFinal;
-                console.log("INVENIO: Precios actualizados desde columnas B y D.");
-            } else {
-                console.warn("INVENIO: No se encontraron datos en las columnas especificadas.");
-            }
-
-        } catch (error) {
-            console.error("Error crítico de conexión:", error);
-        }
+            contenedor.innerHTML = htmlFinal;
+        } catch (e) { console.error("Error INVENIO:", e); }
     }
 
-    // Ejecución inicial y refresco cada 5 minutos
     actualizarPrecios();
     setInterval(actualizarPrecios, 300000);
 </script>
