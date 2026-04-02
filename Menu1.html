@@ -134,6 +134,10 @@
 
     actualizarMenu();
     setInterval(actualizarMenu, 300000); // 5 minutos
+     if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log("INVENIO: Modo Offline Activado"));
+}
 </script>
 </body>
 </html>
