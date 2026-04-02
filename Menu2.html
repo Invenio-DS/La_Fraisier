@@ -63,82 +63,69 @@
     <div class="menu-wrapper" id="menu-container"></div>
 
 <script>
-    // URL Corregida para forzar la pestaña Menu 2 (GID: 1532502441)
-const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1532502441&single=true&output=csv";
+    // URL de la pestaña Menu 2
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1532502441&single=true&output=csv";
 
-    function parsearCSV(linea) {
-        const columnas = [];
-        let celda = "", dentroComillas = false;
-        for (let char of linea) {
-            if (char === '"') dentroComillas = !dentroComillas;
-            else if (char === ',' && !dentroComillas) {
-                columnas.push(celda.trim());
-                celda = "";
-            } else celda += char;
-        }
-        columnas.push(celda.trim());
-        return columnas;
-    }
+    // --- 1. LIMPIEZA AGRESIVA AL CARGAR ---
+    (function limpiarCacheAntiguo() {
+        console.log("INVENIO: Ejecutando limpieza de arranque...");
+        // Borramos específicamente el backup del menú 1 si existe
+        localStorage.removeItem('invenio_backup'); 
+        localStorage.removeItem('backup_invenio');
+        // Si quieres borrar TODO para empezar de cero, usa: localStorage.clear();
+    })();
 
-    function renderizarMenu(csvText) {
-        const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
-        const datos = lineas.slice(1); 
-        const contenedor = document.getElementById('menu-container');
-        let htmlFinal = "";
-
-        const cuadrantes = [
-            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" },
-            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" },
-            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" },
-            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" } 
-        ];
-
-        datos.forEach((linea, i) => {
-            if (i < 4) {
-                const col = parsearCSV(linea);
-                if (col.length >= 4) {
-                    const precioBs = col[1]; 
-                    const precioRef = col[3];
-                    if (precioBs) {
-                        const pos = cuadrantes[i];
-                        htmlFinal += `
-                            <div class="dato-dinamico ${pos.ref}">${precioRef}</div>
-                            <div class="dato-dinamico ${pos.bs}">${precioBs}</div>
-                        `;
-                    }
-                }
-            }
-        });
-        contenedor.innerHTML = htmlFinal;
-    }
+    // ... (mantén tus funciones parsearCSV y renderizarMenu igual) ...
 
     async function sincronizar() {
+        const timestamp = new Date().getTime();
+        console.log("INVENIO: Intentando sincronización fresca v." + timestamp);
+        
         try {
-            const timestamp = new Date().getTime();
-            const res = await fetch(`${sheetURL}&version=${timestamp}`, {
+            // Añadimos parámetros extra para romper el caché de los servidores de Google
+            const res = await fetch(`${sheetURL}&cachebust=${timestamp}&refresh=true`, {
                 method: 'GET',
                 cache: 'no-store',
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache',
-                    'Expires': '0'
+                    'Pragma': 'no-cache'
                 }
             });
 
             if (!res.ok) throw new Error("Error de red");
+            
             const csvText = await res.text();
-            localStorage.setItem('backup_m2', csvText);
-            renderizarMenu(csvText);
-            console.log("INVENIO: Sincronizado OK v." + timestamp);
-        } catch (e) {
-            console.warn("INVENIO: Usando backup.");
-            const backup = localStorage.getItem('backup_m2');
+
+            // --- 2. VALIDACIÓN DE CONTENIDO ---
+            // Solo guardamos si el CSV contiene palabras del Menú 2 (Mini o Pizza)
+            // Esto evita que el "fantasma" del Menú 1 se guarde por error
+            if (csvText.toLowerCase().includes("mini") || csvText.toLowerCase().includes("pizza")) {
+                localStorage.setItem('backup_MENU_DOS_FINAL', csvText);
+                renderizarMenu(csvText);
+                console.log("INVENIO: Menú 2 cargado y guardado en backup nuevo.");
+            } else {
+                console.error("INVENIO: Google entregó datos que no parecen del Menú 2.");
+            }
+
+        } catch (error) {
+            console.warn("INVENIO: Sin conexión. Usando respaldo exclusivo del Menú 2.");
+            const backup = localStorage.getItem('backup_MENU_DOS_FINAL');
             if (backup) renderizarMenu(backup);
         }
     }
 
+    // Registro de Service Worker (si lo usas)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.unregister(); // Forzamos actualización del SW también
+            }
+        });
+    }
+
     sincronizar();
-    setInterval(sincronizar, 120000);
+    // Refresco cada 3 minutos
+    setInterval(sincronizar, 180000);
 </script>
 </body>
 </html>
