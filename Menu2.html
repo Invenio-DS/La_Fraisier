@@ -6,7 +6,8 @@
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            src: url('./handelson-Four.otf') format('opentype');
+            /* CORRECCIÓN: Nombre exacto del archivo con H mayúscula */
+            src: url('./Handelson-Four.otf') format('opentype');
             font-weight: normal; font-style: normal;
         }
 
@@ -35,7 +36,7 @@
             position: absolute;
             font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
-            font-size: 2.1vw; /* Un poco más pequeño para que quepa en las cápsulas */
+            font-size: 2.1vw;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
             white-space: nowrap;
             display: block;
@@ -45,24 +46,16 @@
             animation: fadeInPrecios 0.9s ease-out forwards;
         }
 
-        /* --- COORDENADAS HORIZONTALES (X) --- */
-        /* Productos a la Izquierda (Mini Lunch / Tequeñón) */
+        /* --- COORDENADAS MANTENIDAS --- */
         .col-izq-ref { left: 34.1%; }
         .col-izq-bs  { left: 34.1%; }
-
-        /* Productos a la Derecha (Pizza / Empanadas) */
         .col-der-ref { left: 80.5%; }
         .col-der-bs  { left: 80.5%; }
 
-        /* --- COORDENADAS VERTICALES (Y) --- */
-        /* Fila Superior (Mini Lunch y Pizza) */
         .y-sup-ref { top: 30.5%; }
         .y-sup-bs  { top: 36.8%; }
-
-        /* Fila Inferior (Tequeñón y Empanadas) */
         .y-inf-ref { top: 69.8%; }
         .y-inf-bs  { top: 76.1%; }
-
     </style>
 </head>
 <body>
@@ -70,7 +63,6 @@
     <div class="menu-wrapper" id="menu-container"></div>
 
 <script>
-    // URL con el GID de la 3ra pestaña (Asegúrate que el GID sea el correcto de tu barra de direcciones)
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1532502441&single=true&output=csv";
 
     function parsearCSV(linea) {
@@ -93,26 +85,26 @@
         const contenedor = document.getElementById('menu-container');
         let htmlFinal = "";
 
-        // Mapeo manual para los 4 cuadrantes basado en las filas del Excel
         const cuadrantes = [
-            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" }, // Mini Lunch (Fila 1 Excel)
-            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" }, // Pizza (Fila 2 Excel)
-            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" }, // Tequeñón (Fila 3 Excel)
-            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }  // Empanadas (Fila 4 Excel)
+            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" },
+            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" },
+            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" },
+            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" } 
         ];
 
         datos.forEach((linea, i) => {
-            if (i < 4) { // Solo procesamos los primeros 4 productos
+            if (i < 4) {
                 const col = parsearCSV(linea);
-                const precioBs = col[1]; // Columna B
-                const precioRef = col[3]; // Columna D
-                
-                if (precioBs) {
-                    const pos = cuadrantes[i];
-                    htmlFinal += `
-                        <div class="dato-dinamico ${pos.ref}">${precioRef}</div>
-                        <div class="dato-dinamico ${pos.bs}">${precioBs}</div>
-                    `;
+                if (col.length >= 4) {
+                    const precioBs = col[1]; 
+                    const precioRef = col[3];
+                    if (precioBs) {
+                        const pos = cuadrantes[i];
+                        htmlFinal += `
+                            <div class="dato-dinamico ${pos.ref}">${precioRef}</div>
+                            <div class="dato-dinamico ${pos.bs}">${precioBs}</div>
+                        `;
+                    }
                 }
             }
         });
@@ -120,15 +112,11 @@
     }
 
     async function sincronizar() {
-        console.log("INVENIO: Forzando actualización de datos...");
         try {
-            // 1. Generamos un código de tiempo único para engañar al caché
             const timestamp = new Date().getTime();
-            
-            // 2. Añadimos headers de control para que no use copias guardadas
             const res = await fetch(`${sheetURL}&version=${timestamp}`, {
                 method: 'GET',
-                cache: 'no-store', // Indica al navegador no guardar nada
+                cache: 'no-store',
                 headers: {
                     'Cache-Control': 'no-cache, no-store, must-revalidate',
                     'Pragma': 'no-cache',
@@ -137,26 +125,18 @@
             });
 
             if (!res.ok) throw new Error("Error de red");
-            
             const csvText = await res.text();
-            
-            // Guardamos respaldo para el modo offline
             localStorage.setItem('backup_m2', csvText);
-            
             renderizarMenu(csvText);
-            console.log("INVENIO: Sincronizado con éxito v." + timestamp);
-
+            console.log("INVENIO: Sincronizado OK v." + timestamp);
         } catch (e) {
-            console.warn("INVENIO: Error de conexión, cargando respaldo.");
+            console.warn("INVENIO: Usando backup.");
             const backup = localStorage.getItem('backup_m2');
             if (backup) renderizarMenu(backup);
         }
     }
 
-    // Ejecución inicial
     sincronizar();
-
-    // 3. Reducimos el tiempo de refresco a 2 minutos para que sea más ágil
     setInterval(sincronizar, 120000);
 </script>
 </body>
