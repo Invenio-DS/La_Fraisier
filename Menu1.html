@@ -30,8 +30,8 @@
 
         /* 1. Definir la animación de entrada */
         @keyframes fadeInPrecios {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(2); }
         }
 
         .dato-dinamico {
@@ -48,7 +48,7 @@
             width: 150px; /* Ancho fijo para que el 'right' tenga un eje común */
             
             /* 3. APLICAR ANIMACIÓN */
-            animation: fadeInPrecios 0.8s ease-out forwards;
+            animation: fadeInPrecios 1s ease-out forwards;
         }
 
         /* Ajustamos el "left" para que el borde derecho coincida con tu diseño */
@@ -68,44 +68,72 @@
     <div class="menu-wrapper" id="menu-container">
         </div>
 
-  <script>
+ <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
 
-    async function actualizarPrecios() {
+    // Función para procesar CSV protegiendo las comas internas de los nombres
+    function parsearCSV(linea) {
+        const columnas = [];
+        let celda = "";
+        let dentroComillas = false;
+        for (let char of linea) {
+            if (char === '"') dentroComillas = !dentroComillas;
+            else if (char === ',' && !dentroComillas) {
+                columnas.push(celda.trim());
+                celda = "";
+            } else celda += char;
+        }
+        columnas.push(celda.trim());
+        return columnas;
+    }
+
+    async function actualizarMenu() {
+        console.log("INVENIO: Sincronizando B (Bs.) y D (Ref)...");
         try {
-            const res = await fetch(`${sheetURL}&v=${new Date().getTime()}`);
+            const res = await fetch(`${sheetURL}&nocache=${new Date().getTime()}`);
             const csvText = await res.text();
             const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
-            const datos = lineas.slice(1); 
+            const datos = lineas.slice(1); // Saltar encabezado
             
             const contenedor = document.getElementById('menu-container');
             let htmlFinal = "";
 
             datos.forEach((linea, i) => {
-                // Función simple para separar comas
-                const col = linea.split(",").map(c => c.replace(/"/g, "").trim());
+                const col = parsearCSV(linea);
+                
+                // NUEVO MAPEO SEGÚN TU SOLICITUD:
+                // col[1] = Columna B (Bs.)
+                // col[3] = Columna D (Ref)
                 
                 if (col.length >= 4) {
-                    const ref = col[1]; // Columna B
-                    const bs = col[3];  // Columna D
+                    const precioBs = col[1]; 
+                    const precioRef = col[3];
 
-                    if (ref) {
-                        // Inyectamos con retraso escalonado para un efecto visual premium
-                        const delay = i * 0.1; 
+                    if (precioBs && precioBs !== "") {
+                        const delay = i * 0.08; // Efecto cascada elegante
+                        
                         htmlFinal += `
-                            <div class="dato-dinamico col-ref fila-${i}" style="animation-delay: ${delay}s">${ref}</div>
-                            <div class="dato-dinamico col-bs fila-${i}" style="animation-delay: ${delay + 0.05}s">${bs}</div>
+                            <div class="dato-dinamico col-bs fila-${i}" style="animation-delay: ${delay}s">
+                                ${precioBs}
+                            </div>
+                            <div class="dato-dinamico col-ref fila-${i}" style="animation-delay: ${delay + 0.04}s">
+                                ${precioRef}
+                            </div>
                         `;
                     }
                 }
             });
 
             contenedor.innerHTML = htmlFinal;
-        } catch (e) { console.error("Error INVENIO:", e); }
+            console.log("INVENIO: Renderizado finalizado con éxito.");
+
+        } catch (error) {
+            console.error("Error en la carga de datos:", error);
+        }
     }
 
-    actualizarPrecios();
-    setInterval(actualizarPrecios, 300000);
+    actualizarMenu();
+    setInterval(actualizarMenu, 300000); // 5 minutos
 </script>
 </body>
 </html>
