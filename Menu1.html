@@ -31,7 +31,7 @@
         /* 1. Definir la animación de entrada */
         @keyframes fadeInPrecios {
             from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(3); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .dato-dinamico {
@@ -52,11 +52,11 @@
         }
 
         /* Ajustamos el "left" para que el borde derecho coincida con tu diseño */
-        /* Columna B (Ref) - Izquierda */
-        .col-ref { left: 64%; } 
+        /* Columna B (Bs) - Ahora mapeada a col-bs */
+        .col-bs  { left: 64%; } 
         
-        /* Columna D (Bs) - Derecha */
-        .col-bs  { left: 76%; }
+        /* Columna D (Ref) - Ahora mapeada a col-ref */
+        .col-ref { left: 76%; }
 
         /* Filas (Eje Y) */
         .fila-0 { top: 30.4%; } .fila-1 { top: 38.3%; } .fila-2 { top: 46.2%; }
@@ -66,12 +66,11 @@
 <body>
 
     <div class="menu-wrapper" id="menu-container">
-        </div>
+    </div>
 
- <script>
+<script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
 
-    // Función para procesar CSV protegiendo las comas internas de los nombres
     function parsearCSV(linea) {
         const columnas = [];
         let celda = "";
@@ -87,36 +86,52 @@
         return columnas;
     }
 
-    async function sincronizar() {
-            try {
-                // Cache busting para evitar precios viejos
-                const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
-                if (!res.ok) throw new Error("Error de red");
-                
-                const csvText = await res.text();
-                
-                // GUARDAR RESPALDO OFFLINE
-                localStorage.setItem('invenio_backup', csvText);
-                
-                renderizarMenu(csvText);
-                console.log("INVENIO: Sincronizado con éxito.");
+    // ESTA ES LA FUNCIÓN QUE FALTABA PARA MOSTRAR LOS PRECIOS
+    function renderizarMenu(csvText) {
+        const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+        const datos = lineas.slice(1); 
+        const contenedor = document.getElementById('menu-container');
+        let htmlFinal = "";
 
-            } catch (error) {
-                console.warn("INVENIO: Modo Offline - Usando caché local.");
-                const backup = localStorage.getItem('invenio_backup');
-                if (backup) renderizarMenu(backup);
+        datos.forEach((linea, i) => {
+            const col = parsearCSV(linea);
+            // B(1) = Bs | D(3) = Ref
+            if (col.length >= 4) {
+                const bs = col[1]; 
+                const ref = col[3];
+                if (bs && bs !== "") {
+                    const delay = i * 0.1;
+                    htmlFinal += `
+                        <div class="dato-dinamico col-bs fila-${i}" style="animation-delay: ${delay}s">${bs}</div>
+                        <div class="dato-dinamico col-ref fila-${i}" style="animation-delay: ${delay + 0.05}s">${ref}</div>
+                    `;
+                }
             }
-        }
+        });
+        if (htmlFinal !== "") contenedor.innerHTML = htmlFinal;
+    }
 
-        // Registro de Service Worker para asegurar que la imagen cargue sin internet
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').catch(() => {});
+    async function sincronizar() {
+        try {
+            const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
+            if (!res.ok) throw new Error("Error de red");
+            const csvText = await res.text();
+            localStorage.setItem('invenio_backup', csvText);
+            renderizarMenu(csvText);
+            console.log("INVENIO: Sincronizado con éxito.");
+        } catch (error) {
+            console.warn("INVENIO: Modo Offline - Usando caché local.");
+            const backup = localStorage.getItem('invenio_backup');
+            if (backup) renderizarMenu(backup);
         }
+    }
 
-        // Inicio y ciclo de actualización (cada 5 minutos)
-        sincronizar();
-        setInterval(sincronizar, 300000);
-     }
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    sincronizar();
+    setInterval(sincronizar, 300000);
 </script>
 </body>
 </html>
