@@ -63,69 +63,96 @@
     <div class="menu-wrapper" id="menu-container"></div>
 
 <script>
-    // URL de la pestaña Menu 2
+    // URL de la pestaña Menu 2 con GID verificado
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1532502441&single=true&output=csv";
 
-    // --- 1. LIMPIEZA AGRESIVA AL CARGAR ---
-    (function limpiarCacheAntiguo() {
-        console.log("INVENIO: Ejecutando limpieza de arranque...");
-        // Borramos específicamente el backup del menú 1 si existe
-        localStorage.removeItem('invenio_backup'); 
-        localStorage.removeItem('backup_invenio');
-        // Si quieres borrar TODO para empezar de cero, usa: localStorage.clear();
-    })();
+    // 1. LIMPIEZA INMEDIATA AL CARGAR (Para engañar a la TV)
+    localStorage.clear(); 
+    console.log("INVENIO: Memoria de la TV limpiada por seguridad.");
 
-    // ... (mantén tus funciones parsearCSV y renderizarMenu igual) ...
+    function parsearCSV(linea) {
+        const columnas = [];
+        let celda = "", dentroComillas = false;
+        for (let char of linea) {
+            if (char === '"') dentroComillas = !dentroComillas;
+            else if (char === ',' && !dentroComillas) {
+                columnas.push(celda.trim());
+                celda = "";
+            } else celda += char;
+        }
+        columnas.push(celda.trim());
+        return columnas;
+    }
+
+    function renderizarMenu(csvText) {
+        const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+        const datos = lineas.slice(1); 
+        const contenedor = document.getElementById('menu-container');
+        let htmlFinal = "";
+
+        const cuadrantes = [
+            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" }, // Fila 1
+            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" }, // Fila 2
+            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" }, // Fila 3
+            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }  // Fila 4
+        ];
+
+        datos.forEach((linea, i) => {
+            if (i < 4) {
+                const col = parsearCSV(linea);
+                // B(1) = Bs | D(3) = Ref
+                if (col.length >= 4) {
+                    const bs = col[1]; 
+                    const ref = col[3];
+                    if (bs && bs !== "") {
+                        const pos = cuadrantes[i];
+                        const delay = i * 0.1;
+                        htmlFinal += `
+                            <div class="dato-dinamico ${pos.ref}" style="animation-delay: ${delay}s">${ref}</div>
+                            <div class="dato-dinamico ${pos.bs}" style="animation-delay: ${delay + 0.05}s">${bs}</div>
+                        `;
+                    }
+                }
+            }
+        });
+        
+        if (htmlFinal !== "") {
+            contenedor.innerHTML = htmlFinal;
+            console.log("INVENIO: Precios renderizados.");
+        } else {
+            console.warn("INVENIO: El CSV llegó pero no tiene las 4 columnas esperadas.");
+        }
+    }
 
     async function sincronizar() {
-        const timestamp = new Date().getTime();
-        console.log("INVENIO: Intentando sincronización fresca v." + timestamp);
-        
+        const t = new Date().getTime();
         try {
-            // Añadimos parámetros extra para romper el caché de los servidores de Google
-            const res = await fetch(`${sheetURL}&cachebust=${timestamp}&refresh=true`, {
+            // Fetch ultra-agresivo contra el caché
+            const res = await fetch(`${sheetURL}&nocache=${t}`, {
                 method: 'GET',
                 cache: 'no-store',
-                headers: {
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache'
-                }
+                mode: 'cors'
             });
 
             if (!res.ok) throw new Error("Error de red");
             
             const csvText = await res.text();
-
-            // --- 2. VALIDACIÓN DE CONTENIDO ---
-            // Solo guardamos si el CSV contiene palabras del Menú 2 (Mini o Pizza)
-            // Esto evita que el "fantasma" del Menú 1 se guarde por error
-            if (csvText.toLowerCase().includes("mini") || csvText.toLowerCase().includes("pizza")) {
-                localStorage.setItem('backup_MENU_DOS_FINAL', csvText);
-                renderizarMenu(csvText);
-                console.log("INVENIO: Menú 2 cargado y guardado en backup nuevo.");
-            } else {
-                console.error("INVENIO: Google entregó datos que no parecen del Menú 2.");
-            }
+            
+            // Guardamos el backup fresco del Menú 2
+            localStorage.setItem('backup_m2_fresco', csvText);
+            renderizarMenu(csvText);
 
         } catch (error) {
-            console.warn("INVENIO: Sin conexión. Usando respaldo exclusivo del Menú 2.");
-            const backup = localStorage.getItem('backup_MENU_DOS_FINAL');
+            console.error("INVENIO: Error en sincronización, intentando backup.");
+            const backup = localStorage.getItem('backup_m2_fresco');
             if (backup) renderizarMenu(backup);
         }
     }
 
-    // Registro de Service Worker (si lo usas)
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-                registration.unregister(); // Forzamos actualización del SW también
-            }
-        });
-    }
-
+    // Ejecutar al iniciar
     sincronizar();
-    // Refresco cada 3 minutos
-    setInterval(sincronizar, 180000);
+    // Refresco cada 2 minutos
+    setInterval(sincronizar, 120000);
 </script>
 </body>
 </html>
