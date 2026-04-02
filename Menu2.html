@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menú 2 L'fraisier</title>
+    <title>INVENIO - MenÃº 2 L'fraisier</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
@@ -20,7 +20,7 @@
             position: relative;
             width: 100vw; height: 56.25vw; 
             max-width: 1920px; max-height: 1080px;
-            background-image: url('Menu2.jpg') !important;
+            background-image: url('Menu2.png') !important;
             background-size: cover;
             background-position: center;
             z-index: 1;
@@ -35,7 +35,7 @@
             position: absolute;
             font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
-            font-size: 1.8vw; /* Un poco más pequeño para que quepa en las cápsulas */
+            font-size: 1.8vw; /* Un poco mÃ¡s pequeÃ±o para que quepa en las cÃ¡psulas */
             text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
             white-space: nowrap;
             display: block;
@@ -46,7 +46,7 @@
         }
 
         /* --- COORDENADAS HORIZONTALES (X) --- */
-        /* Productos a la Izquierda (Mini Lunch / Tequeñón) */
+        /* Productos a la Izquierda (Mini Lunch / TequeÃ±Ã³n) */
         .col-izq-ref { left: 34.5%; }
         .col-izq-bs  { left: 34.5%; }
 
@@ -59,7 +59,7 @@
         .y-sup-ref { top: 30.5%; }
         .y-sup-bs  { top: 36.8%; }
 
-        /* Fila Inferior (Tequeñón y Empanadas) */
+        /* Fila Inferior (TequeÃ±Ã³n y Empanadas) */
         .y-inf-ref { top: 69.8%; }
         .y-inf-bs  { top: 76.1%; }
 
@@ -70,7 +70,7 @@
     <div class="menu-wrapper" id="menu-container"></div>
 
 <script>
-    // URL con el GID de la 3ra pestaña (Asegúrate que el GID sea el correcto de tu barra de direcciones)
+    // URL con el GID de la 3ra pestaÃ±a (AsegÃºrate que el GID sea el correcto de tu barra de direcciones)
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
 
     function parsearCSV(linea) {
@@ -97,7 +97,7 @@
         const cuadrantes = [
             { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" }, // Mini Lunch (Fila 1 Excel)
             { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" }, // Pizza (Fila 2 Excel)
-            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" }, // Tequeñón (Fila 3 Excel)
+            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" }, // TequeÃ±Ã³n (Fila 3 Excel)
             { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }  // Empanadas (Fila 4 Excel)
         ];
 
