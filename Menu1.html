@@ -87,57 +87,36 @@
         return columnas;
     }
 
-    async function actualizarMenu() {
-        console.log("INVENIO: Sincronizando B (Bs.) y D (Ref)...");
-        try {
-            const res = await fetch(`${sheetURL}&nocache=${new Date().getTime()}`);
-            const csvText = await res.text();
-            const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
-            const datos = lineas.slice(1); // Saltar encabezado
-            
-            const contenedor = document.getElementById('menu-container');
-            let htmlFinal = "";
-
-            datos.forEach((linea, i) => {
-                const col = parsearCSV(linea);
+    async function sincronizar() {
+            try {
+                // Cache busting para evitar precios viejos
+                const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
+                if (!res.ok) throw new Error("Error de red");
                 
-                // NUEVO MAPEO SEGÚN TU SOLICITUD:
-                // col[1] = Columna B (Bs.)
-                // col[3] = Columna D (Ref)
+                const csvText = await res.text();
                 
-                if (col.length >= 4) {
-                    const precioBs = col[1]; 
-                    const precioRef = col[3];
+                // GUARDAR RESPALDO OFFLINE
+                localStorage.setItem('invenio_backup', csvText);
+                
+                renderizarMenu(csvText);
+                console.log("INVENIO: Sincronizado con éxito.");
 
-                    if (precioBs && precioBs !== "") {
-                        const delay = i * 0.08; // Efecto cascada elegante
-                        
-                        htmlFinal += `
-                            <div class="dato-dinamico col-bs fila-${i}" style="animation-delay: ${delay}s">
-                                ${precioBs}
-                            </div>
-                            <div class="dato-dinamico col-ref fila-${i}" style="animation-delay: ${delay + 0.04}s">
-                                ${precioRef}
-                            </div>
-                        `;
-                    }
-                }
-            });
-
-            contenedor.innerHTML = htmlFinal;
-            console.log("INVENIO: Renderizado finalizado con éxito.");
-
-        } catch (error) {
-            console.error("Error en la carga de datos:", error);
+            } catch (error) {
+                console.warn("INVENIO: Modo Offline - Usando caché local.");
+                const backup = localStorage.getItem('invenio_backup');
+                if (backup) renderizarMenu(backup);
+            }
         }
-    }
 
-    actualizarMenu();
-    setInterval(actualizarMenu, 300000); // 5 minutos
-     if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log("INVENIO: Modo Offline Activado"));
-}
+        // Registro de Service Worker para asegurar que la imagen cargue sin internet
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }
+
+        // Inicio y ciclo de actualización (cada 5 minutos)
+        sincronizar();
+        setInterval(sincronizar, 300000);
+     }
 </script>
 </body>
 </html>
