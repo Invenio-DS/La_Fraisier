@@ -120,19 +120,44 @@
     }
 
     async function sincronizar() {
+        console.log("INVENIO: Forzando actualización de datos...");
         try {
-            const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
+            // 1. Generamos un código de tiempo único para engañar al caché
+            const timestamp = new Date().getTime();
+            
+            // 2. Añadimos headers de control para que no use copias guardadas
+            const res = await fetch(`${sheetURL}&version=${timestamp}`, {
+                method: 'GET',
+                cache: 'no-store', // Indica al navegador no guardar nada
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+
+            if (!res.ok) throw new Error("Error de red");
+            
             const csvText = await res.text();
+            
+            // Guardamos respaldo para el modo offline
             localStorage.setItem('backup_m2', csvText);
+            
             renderizarMenu(csvText);
+            console.log("INVENIO: Sincronizado con éxito v." + timestamp);
+
         } catch (e) {
+            console.warn("INVENIO: Error de conexión, cargando respaldo.");
             const backup = localStorage.getItem('backup_m2');
             if (backup) renderizarMenu(backup);
         }
     }
 
+    // Ejecución inicial
     sincronizar();
-    setInterval(sincronizar, 300000);
+
+    // 3. Reducimos el tiempo de refresco a 2 minutos para que sea más ágil
+    setInterval(sincronizar, 120000);
 </script>
 </body>
 </html>
