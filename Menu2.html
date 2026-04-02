@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>INVENIO - Menú 2 L'fraisier</title>
+    <style>
+        @font-face {
+            font-family: 'HandelsonFour';
+            src: url('./handelson-Four.otf') format('opentype');
+            font-weight: normal; font-style: normal;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: #000; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .menu-wrapper {
+            position: relative;
+            width: 100vw; height: 56.25vw; 
+            max-width: 1920px; max-height: 1080px;
+            background-image: url('Menu2.jpg') !important;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+        }
+
+        @keyframes fadeInPrecios {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dato-dinamico {
+            position: absolute;
+            font-family: 'HandelsonFour', sans-serif;
+            color: #FFFFFF;
+            font-size: 1.8vw; /* Un poco más pequeño para que quepa en las cápsulas */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            display: block;
+            text-align: right; 
+            width: 120px; 
+            opacity: 0;
+            animation: fadeInPrecios 0.8s ease-out forwards;
+        }
+
+        /* --- COORDENADAS HORIZONTALES (X) --- */
+        /* Productos a la Izquierda (Mini Lunch / Tequeñón) */
+        .col-izq-ref { left: 34.5%; }
+        .col-izq-bs  { left: 34.5%; }
+
+        /* Productos a la Derecha (Pizza / Empanadas) */
+        .col-der-ref { left: 81.5%; }
+        .col-der-bs  { left: 81.5%; }
+
+        /* --- COORDENADAS VERTICALES (Y) --- */
+        /* Fila Superior (Mini Lunch y Pizza) */
+        .y-sup-ref { top: 30.5%; }
+        .y-sup-bs  { top: 36.8%; }
+
+        /* Fila Inferior (Tequeñón y Empanadas) */
+        .y-inf-ref { top: 69.8%; }
+        .y-inf-bs  { top: 76.1%; }
+
+    </style>
+</head>
+<body>
+
+    <div class="menu-wrapper" id="menu-container"></div>
+
+<script>
+    // URL con el GID de la 3ra pestaña (Asegúrate que el GID sea el correcto de tu barra de direcciones)
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
+
+    function parsearCSV(linea) {
+        const columnas = [];
+        let celda = "", dentroComillas = false;
+        for (let char of linea) {
+            if (char === '"') dentroComillas = !dentroComillas;
+            else if (char === ',' && !dentroComillas) {
+                columnas.push(celda.trim());
+                celda = "";
+            } else celda += char;
+        }
+        columnas.push(celda.trim());
+        return columnas;
+    }
+
+    function renderizarMenu(csvText) {
+        const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+        const datos = lineas.slice(1); 
+        const contenedor = document.getElementById('menu-container');
+        let htmlFinal = "";
+
+        // Mapeo manual para los 4 cuadrantes basado en las filas del Excel
+        const cuadrantes = [
+            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" }, // Mini Lunch (Fila 1 Excel)
+            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" }, // Pizza (Fila 2 Excel)
+            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" }, // Tequeñón (Fila 3 Excel)
+            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }  // Empanadas (Fila 4 Excel)
+        ];
+
+        datos.forEach((linea, i) => {
+            if (i < 4) { // Solo procesamos los primeros 4 productos
+                const col = parsearCSV(linea);
+                const precioBs = col[1]; // Columna B
+                const precioRef = col[3]; // Columna D
+                
+                if (precioBs) {
+                    const pos = cuadrantes[i];
+                    htmlFinal += `
+                        <div class="dato-dinamico ${pos.ref}">${precioRef}</div>
+                        <div class="dato-dinamico ${pos.bs}">${precioBs}</div>
+                    `;
+                }
+            }
+        });
+        contenedor.innerHTML = htmlFinal;
+    }
+
+    async function sincronizar() {
+        try {
+            const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
+            const csvText = await res.text();
+            localStorage.setItem('backup_m2', csvText);
+            renderizarMenu(csvText);
+        } catch (e) {
+            const backup = localStorage.getItem('backup_m2');
+            if (backup) renderizarMenu(backup);
+        }
+    }
+
+    sincronizar();
+    setInterval(sincronizar, 300000);
+</script>
+</body>
+</html>
