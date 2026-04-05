@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>INVENIO - Menú 5 L'fraisier</title>
+    <style>
+        @font-face {
+            font-family: 'HandelsonFour';
+            /* CORRECCIÓN: Nombre exacto del archivo con H mayúscula */
+            src: url('./Handelson-Four.otf') format('opentype');
+            font-weight: normal; font-style: normal;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: #000; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .menu-wrapper {
+            position: relative;
+            width: 100vw; height: 56.25vw; 
+            max-width: 1920px; max-height: 1080px;
+            background-image: url('Menu5.png') !important;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+        }
+
+        @keyframes fadeInPrecios {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dato-dinamico {
+            position: absolute;
+            font-family: 'HandelsonFour', sans-serif;
+            color: #FFFFFF;
+            font-size: 2.3vw;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            display: block;
+            text-align: right; 
+            width: 120px; 
+            opacity: 0;
+            animation: fadeInPrecios 0.9s ease-out forwards;
+        }
+
+        /* --- COORDENADAS HORIZONTALES (X) --- */
+        /* Productos a la Izquierda (Caracola de Chocolate / Palmera) */
+        .col-izq-ref { left: 31.6%; }
+        .col-izq-bs  { left: 31.6%; }
+
+        /* Productos a la Derecha (Croissant de Chocolate / Racion de Ponque) */
+        .col-der-ref { left: 77.8%; }
+        .col-der-bs  { left: 77.8%; }
+
+        /* --- COORDENADAS VERTICALES (Y) --- */
+        /* Fila Superior (Caracola de Cocolate / Croissant de Chocolate) */
+        .y-sup-ref { top: 29.7%; }
+        .y-sup-bs  { top: 36.6%; }
+
+        /* Fila Inferior (Palmera / Racion de Ponque) */
+        .y-inf-ref { top: 68.8%; }
+        .y-inf-bs  { top: 75.6%; }
+
+        /* --- ESTILOS NUEVOS (BLOQUEO E ICONO) --- */
+        #bloqueo-tecnico {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; color: #fff;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; text-align: center; font-family: sans-serif;
+        }
+        #bloqueo-tecnico h1 { font-size: 5vw; }
+
+        #debug-status {
+            position: fixed; bottom: 10px; left: 10px;
+            font-size: 16px; z-index: 1000;
+            transition: opacity 0.5s;
+        }
+        .online { color: #00FF00; opacity: 0.3; }
+        .offline { color: #FF0000; opacity: 1; }
+
+    </style>
+</head>
+<body>
+
+    <div id="bloqueo-tecnico">
+        <h1>CONTACTAR AL SERVICIO TÉCNICO</h1>
+    </div>
+
+    <div class="menu-wrapper" id="menu-container"></div>
+    
+    <div id="debug-status"></div>
+
+<script>
+    // URL de la pestaña Menu 2 con GID verificado
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1242245375&single=true&output=csv";
+
+    // 1. LIMPIEZA INMEDIATA AL CARGAR (Para engañar a la TV)
+    localStorage.clear(); 
+    console.log("INVENIO: Memoria de la TV limpiada por seguridad.");
+
+    function parsearCSV(linea) {
+        const columnas = [];
+        let celda = "", dentroComillas = false;
+        for (let char of linea) {
+            if (char === '"') dentroComillas = !dentroComillas;
+            else if (char === ',' && !dentroComillas) {
+                columnas.push(celda.trim());
+                celda = "";
+            } else celda += char;
+        }
+        columnas.push(celda.trim());
+        return columnas;
+    }
+
+    function renderizarMenu(csvText) {
+        const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+        const datos = lineas.slice(1); 
+        const contenedor = document.getElementById('menu-container');
+        const pantallaBloqueo = document.getElementById('bloqueo-tecnico');
+        const debug = document.getElementById('debug-status');
+
+        // --- VALIDACIÓN DE CELDA G6 (Columna G de la primera fila de datos) ---
+        if (datos.length > 0) {
+            const primerFila = parsearCSV(datos[0]);
+            const switchSeguridad = primerFila[6]; // Índice 6 es la columna G
+
+            if (switchSeguridad === "0") {
+                pantallaBloqueo.style.display = "flex";
+                contenedor.style.display = "none";
+                return; 
+            } else {
+                pantallaBloqueo.style.display = "none";
+                contenedor.style.display = "block";
+            }
+        }
+
+        let htmlFinal = "";
+
+        const cuadrantes = [
+            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" }, // Fila 1
+            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" }, // Fila 2
+            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" }, // Fila 3
+            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }  // Fila 4
+        ];
+
+        datos.forEach((linea, i) => {
+            if (i < 4) {
+                const col = parsearCSV(linea);
+                // B(1) = Bs | D(3) = Ref
+                if (col.length >= 4) {
+                    const bs = col[1]; 
+                    const ref = col[3];
+                    if (bs && bs !== "") {
+                        const pos = cuadrantes[i];
+                        const delay = i * 0.1;
+                        htmlFinal += `
+                            <div class="dato-dinamico ${pos.ref}" style="animation-delay: ${delay}s">${ref}</div>
+                            <div class="dato-dinamico ${pos.bs}" style="animation-delay: ${delay + 0.05}s">${bs}</div>
+                        `;
+                    }
+                }
+            }
+        });
+        
+        if (htmlFinal !== "") {
+            contenedor.innerHTML = htmlFinal;
+            console.log("INVENIO: Precios renderizados.");
+            // Icono de visto bueno verde
+            debug.innerHTML = "?";
+            debug.className = "online";
+        } else {
+            console.warn("INVENIO: El CSV llegó pero no tiene las 4 columnas esperadas.");
+        }
+    }
+
+    async function sincronizar() {
+        const t = new Date().getTime();
+        const debug = document.getElementById('debug-status');
+        try {
+            // Fetch ultra-agresivo contra el caché
+            const res = await fetch(`${sheetURL}&nocache=${t}`, {
+                method: 'GET',
+                cache: 'no-store',
+                mode: 'cors'
+            });
+
+            if (!res.ok) throw new Error("Error de red");
+            
+            const csvText = await res.text();
+            
+            // Guardamos el backup fresco del Menú 2
+            localStorage.setItem('backup_m2_fresco', csvText);
+            renderizarMenu(csvText);
+
+        } catch (error) {
+            console.error("INVENIO: Error en sincronización, intentando backup.");
+            const backup = localStorage.getItem('backup_m2_fresco');
+            if (backup) renderizarMenu(backup);
+            // Icono de error rojo
+            debug.innerHTML = "?";
+            debug.className = "offline";
+        }
+    }
+
+    // Ejecutar al iniciar
+    sincronizar();
+    // Refresco cada 2 minutos
+    setInterval(sincronizar, 120000);
+</script>
+</body>
+</html>
