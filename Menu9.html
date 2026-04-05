@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menu 9 L'fraisier</title>
+    <title>INVENIO - Menu 9 (4 Tamaños)</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            src: url('./handelson-Four.otf') format('opentype');
+            src: url('./Handelson-Four.otf') format('opentype');
             font-weight: normal; font-style: normal;
         }
 
@@ -18,12 +18,21 @@
 
         .menu-wrapper {
             position: relative;
-            width: 100vw; height: 56.25vw; 
-            max-width: 1920px; max-height: 1080px;
-            background-image: url('Menu9.mp4') !important;
-            background-size: cover;
-            background-position: center;
-            z-index: 1;
+            width: 100vw; height: 100vh; 
+            overflow: hidden;
+        }
+
+        #bg-video {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1;
+        }
+
+        #precios-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 999;
+            pointer-events: none;
         }
 
         @keyframes fadeInPrecios {
@@ -35,43 +44,54 @@
             position: absolute;
             font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
-            font-size: 1.8vw;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            font-size: 2vw; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
             white-space: nowrap;
             display: block;
-            text-align: right; 
-            width: 120px; 
+            text-align: center; 
+            width: 180px; 
             opacity: 0;
             animation: fadeInPrecios 0.8s ease-out forwards;
         }
 
-        /* --- COORDENADAS HORIZONTALES (X) --- */
-        .col-izq-ref { left: 34.5%; }
-        .col-izq-bs  { left: 34.5%; }
-        .col-der-ref { left: 81.5%; }
-        .col-der-bs  { left: 81.5%; }
+        /* --- COORDENADAS PARA LOS 4 TAMAÑOS --- */
 
-        /* --- COORDENADAS VERTICALES (Y) --- */
-        .y-sup-ref { top: 30.5%; }
-        .y-sup-bs  { top: 36.8%; }
-        .y-inf-ref { top: 69.8%; }
-        .y-inf-bs  { top: 76.1%; }
+        /* Bloque 1 (Fila 1 Excel - Superior Izquierda) */
+        .pos-1-ref { top: 25%; left: 15%; color: #00FF00; }
+        .pos-1-bs  { top: 32%; left: 15%; }
 
-        /* --- ESTILO DEL ICONO DE ESTADO (NUEVO) --- */
+        /* Bloque 2 (Fila 2 Excel - Superior Derecha) */
+        .pos-2-ref { top: 25%; left: 65%; color: #00FF00; }
+        .pos-2-bs  { top: 32%; left: 65%; }
+
+        /* Bloque 3 (Fila 3 Excel - Inferior Izquierda) */
+        .pos-3-ref { top: 60%; left: 15%; color: #00FF00; }
+        .pos-3-bs  { top: 67%; left: 15%; }
+
+        /* Bloque 4 (Fila 4 Excel - Inferior Derecha) */
+        .pos-4-ref { top: 60%; left: 65%; color: #00FF00; }
+        .pos-4-bs  { top: 67%; left: 65%; }
+
+        /* --- ICONO DE ESTADO --- */
         #debug-status {
             position: fixed; bottom: 10px; left: 10px;
             font-size: 16px; z-index: 1000;
             transition: opacity 0.5s;
             font-family: sans-serif;
         }
-        .online { color: #00FF00; opacity: 0.3; } /* Visto bueno discreto */
-        .offline { color: #FF0000; opacity: 1; }  /* X roja si falla */
+        .online { color: #00FF00; opacity: 0.3; }
+        .offline { color: #FF0000; opacity: 1; }
 
     </style>
 </head>
 <body>
 
-    <div class="menu-wrapper" id="menu-container"></div>
+    <div class="menu-wrapper">
+        <video autoplay muted loop playsinline id="bg-video">
+            <source src="Menu9.mp4" type="video/mp4">
+        </video>
+        <div id="precios-layer"></div>
+    </div>
     
     <div id="debug-status"></div>
 
@@ -95,24 +115,25 @@
     function renderizarMenu(csvText) {
         const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
         const datos = lineas.slice(1); 
-        const contenedor = document.getElementById('menu-container');
+        const contenedor = document.getElementById('precios-layer');
         const debug = document.getElementById('debug-status');
         let htmlFinal = "";
 
+        // Mapeo para los 4 tamaños
         const cuadrantes = [
-            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" },
-            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" },
-            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" },
-            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }
+            { ref: "pos-1-ref", bs: "pos-1-bs" }, // Fila 1
+            { ref: "pos-2-ref", bs: "pos-2-bs" }, // Fila 2
+            { ref: "pos-3-ref", bs: "pos-3-bs" }, // Fila 3
+            { ref: "pos-4-ref", bs: "pos-4-bs" }  // Fila 4
         ];
 
         datos.forEach((linea, i) => {
-            if (i < 4) {
+            if (i < 4) { 
                 const col = parsearCSV(linea);
-                const precioBs = col[1];
-                const precioRef = col[3];
+                const precioBs = col[1];  // Columna B
+                const precioRef = col[3]; // Columna D
                 
-                if (precioBs) {
+                if (precioBs || precioRef) {
                     const pos = cuadrantes[i];
                     htmlFinal += `
                         <div class="dato-dinamico ${pos.ref}">${precioRef}</div>
@@ -123,8 +144,7 @@
         });
         contenedor.innerHTML = htmlFinal;
 
-        // Actualiza el icono a visto bueno
-        debug.innerHTML = "?";
+        debug.innerHTML = "✔";
         debug.className = "online";
     }
 
@@ -133,19 +153,18 @@
         try {
             const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
             const csvText = await res.text();
-            localStorage.setItem('backup_m2', csvText);
+            localStorage.setItem('backup_m9', csvText);
             renderizarMenu(csvText);
         } catch (e) {
-            const backup = localStorage.getItem('backup_m2');
+            const backup = localStorage.getItem('backup_m9');
             if (backup) renderizarMenu(backup);
-            // Muestra error en el icono si falla la red
-            debug.innerHTML = "?";
+            debug.innerHTML = "✘";
             debug.className = "offline";
         }
     }
 
     sincronizar();
-    setInterval(sincronizar, 300000);
+    setInterval(sincronizar, 60000); 
 </script>
 </body>
 </html>
