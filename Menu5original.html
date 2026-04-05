@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menú 5 L'fraisier</title>
+    <title>INVENIO - MenÃº 5 L'fraisier</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            /* CORRECCIÓN: Nombre exacto del archivo con H mayúscula */
+            /* CORRECCIÃ“N: Nombre exacto del archivo con H mayÃºscula */
             src: url('./Handelson-Four.otf') format('opentype');
             font-weight: normal; font-style: normal;
         }
@@ -71,10 +71,10 @@
     <div class="menu-wrapper" id="menu-container"></div>
 
 <script>
-    // URL de la pestaña Menu 2 con GID verificado
+    // URL de la pestaÃ±a Menu 2 con GID verificado
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1242245375&single=true&output=csv";
 
-    // 1. LIMPIEZA INMEDIATA AL CARGAR (Para engañar a la TV)
+    // 1. LIMPIEZA INMEDIATA AL CARGAR (Para engaÃ±ar a la TV)
     localStorage.clear(); 
     console.log("INVENIO: Memoria de la TV limpiada por seguridad.");
 
@@ -128,14 +128,14 @@
             contenedor.innerHTML = htmlFinal;
             console.log("INVENIO: Precios renderizados.");
         } else {
-            console.warn("INVENIO: El CSV llegó pero no tiene las 4 columnas esperadas.");
+            console.warn("INVENIO: El CSV llegÃ³ pero no tiene las 4 columnas esperadas.");
         }
     }
 
     async function sincronizar() {
         const t = new Date().getTime();
         try {
-            // Fetch ultra-agresivo contra el caché
+            // Fetch ultra-agresivo contra el cachÃ©
             const res = await fetch(`${sheetURL}&nocache=${t}`, {
                 method: 'GET',
                 cache: 'no-store',
@@ -146,12 +146,12 @@
             
             const csvText = await res.text();
             
-            // Guardamos el backup fresco del Menú 2
+            // Guardamos el backup fresco del MenÃº 2
             localStorage.setItem('backup_m2_fresco', csvText);
             renderizarMenu(csvText);
 
         } catch (error) {
-            console.error("INVENIO: Error en sincronización, intentando backup.");
+            console.error("INVENIO: Error en sincronizaciÃ³n, intentando backup.");
             const backup = localStorage.getItem('backup_m2_fresco');
             if (backup) renderizarMenu(backup);
         }
