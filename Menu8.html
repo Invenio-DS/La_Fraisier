@@ -2,12 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menú 8 Jugos Corregido</title>
+    <title>INVENIO - Jugo Ãšnico</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            src: url('./handelson-Four.otf') format('opentype');
-            font-weight: normal; font-style: normal;
+            src: url('./Handelson-Four.otf') format('opentype');
         }
 
         body, html { 
@@ -18,67 +17,50 @@
         .menu-wrapper {
             position: relative;
             width: 100vw; height: 100vh; 
-            z-index: 1;
         }
 
-        /* VIDEO: Forzado al fondo total */
         #bg-video {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 1; /* El video es la capa 1 */
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 1;
         }
 
-        /* CAPA DE PRECIOS: Forzada al frente */
         #precios-layer {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 999; /* Los precios son la capa 999 */
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 999;
             pointer-events: none;
         }
 
         .dato-dinamico {
             position: absolute;
-            font-family: 'HandelsonFour', 'Arial Black', sans-serif;
+            font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
-            font-size: 2.2vw;
             text-shadow: 3px 3px 6px rgba(0,0,0,1);
-            white-space: nowrap;
             text-align: right; 
-            width: 180px; 
-            /* Quitamos opacity 0 temporalmente para asegurar que se vean */
-            opacity: 1; 
+            width: 300px; /* MÃ¡s ancho para precios grandes */
         }
 
-        /* --- COORDENADAS --- */
-        .col-izq-ref { left: 34.5%; color: #00FF00; }
-        .col-izq-bs  { left: 34.5%; }
+        /* --- COORDENADAS PARA EL PRODUCTO ÃšNICO --- */
+        /* Ajusta estos valores para centrarlo donde desees en el video */
+        .pos-ref { 
+            top: 40%; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 5vw; 
+            color: #00FF00; 
+        }
 
-        .col-der-ref { left: 81.5%; color: #00FF00; }
-        .col-der-bs  { left: 81.5%; }
+        .pos-bs { 
+            top: 52%; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 3.5vw; 
+        }
 
-        .y-sup-ref { top: 30.5%; }
-        .y-sup-bs  { top: 36.8%; }
-
-        .y-inf-ref { top: 69.8%; }
-        .y-inf-bs  { top: 76.1%; }
-
-        /* Indicador de estado para saber si el internet funciona */
         #debug-status {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            color: yellow;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.5);
+            position: fixed; bottom: 5px; left: 5px;
+            color: yellow; font-size: 10px; z-index: 1000;
         }
     </style>
 </head>
@@ -88,15 +70,14 @@
         <video autoplay muted loop playsinline id="bg-video">
             <source src="Menu8.mp4" type="video/mp4">
         </video>
-        
         <div id="precios-layer"></div>
     </div>
 
-    <div id="debug-status">Iniciando...</div>
+    <div id="debug-status">Conectando...</div>
 
 <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1499002722&single=true&output=csv";
-		        
+
     function parsearCSV(linea) {
         const columnas = [];
         let celda = "", dentroComillas = false;
@@ -113,112 +94,40 @@
 
     function renderizarMenu(csvText) {
         const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
-        const datosRaw = lineas.slice(1); 
         const contenedor = document.getElementById('precios-layer');
         const debug = document.getElementById('debug-status');
         
-        let htmlFinal = "";
-        let productosEncontrados = 0;
+        // ACCEDEMOS DIRECTO A LA LÃNEA 2 (Ãndice 1 en programaciÃ³n)
+        if (lineas.length >= 2) {
+            const col = parsearCSV(lineas[1]); 
+            const precioBs = col[1] ? col[1].trim() : "0.00"; // Columna B
+            const precioRef = col[3] ? col[3].trim() : "0.00"; // Columna D
 
-        const cuadrantes = [
-            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" },
-            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" },
-            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" },
-            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }
-        ];
-
-        datosRaw.forEach((linea) => {
-            const col = parsearCSV(linea);
-            const nombre = col[0] ? col[0].toUpperCase() : "";
-            const precioBs = col[1];
-            const precioRef = col[3];
-
-            // SI LA FILA TIENE PRECIO Y NO ES EL TÍTULO "BATIDOS"
-            if (precioBs && !nombre.includes("BATIDOS") && productosEncontrados < 4) {
-                const pos = cuadrantes[productosEncontrados];
-                htmlFinal += `
-                    <div class="dato-dinamico ${pos.ref}">${precioRef}</div>
-                    <div class="dato-dinamico ${pos.bs}">${precioBs}</div>
-                `;
-                productosEncontrados++;
-            }
-        });
-
-        contenedor.innerHTML = htmlFinal;
-        debug.innerText = `Cargados: ${productosEncontrados} productos.`;
+            contenedor.innerHTML = `
+                <div class="dato-dinamico pos-ref">${precioRef}</div>
+                <div class="dato-dinamico pos-bs">${precioBs}</div>
+            `;
+            debug.innerText = "Producto cargado desde Fila 2";
+        } else {
+            debug.innerText = "Error: El Excel no tiene fila 2";
+        }
     }
 
     async function sincronizar() {
-        const debug = document.getElementById('debug-status');
         try {
-            debug.innerText = "Buscando datos...";
             const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
             const csvText = await res.text();
-            localStorage.setItem('backup_m8', csvText);
+            localStorage.setItem('backup_m8_unico', csvText);
             renderizarMenu(csvText);
         } catch (e) {
-            debug.innerText = "Error red. Usando backup.";
-            const backup = localStorage.getItem('backup_m8');
+            const backup = localStorage.getItem('backup_m8_unico');
             if (backup) renderizarMenu(backup);
+            document.getElementById('debug-status').innerText = "Modo Offline (Sin Internet)";
         }
     }
 
     sincronizar();
     setInterval(sincronizar, 60000);
-</script>
-</body>
-</html>
-    function renderizarMenu(csvText) {
-        const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
-        const datosRaw = lineas.slice(1); 
-        const contenedor = document.getElementById('precios-layer');
-        let htmlFinal = "";
-
-        // Solo queremos los datos reales, saltamos los títulos si existen
-        const datosFiltrados = datosRaw.filter(l => {
-            const c = parsearCSV(l);
-            return c[0] && !c[0].toUpperCase().includes("BATIDOS");
-        });
-
-        const cuadrantes = [
-            { ref: "col-izq-ref y-sup-ref", bs: "col-izq-bs y-sup-bs" },
-            { ref: "col-der-ref y-sup-ref", bs: "col-der-bs y-sup-bs" },
-            { ref: "col-izq-ref y-inf-ref", bs: "col-izq-bs y-inf-bs" },
-            { ref: "col-der-ref y-inf-ref", bs: "col-der-bs y-inf-bs" }
-        ];
-
-        datosFiltrados.forEach((linea, i) => {
-            if (i < 4) { 
-                const col = parsearCSV(linea);
-                const precioBs = col[1];  // Columna B
-                const precioRef = col[3]; // Columna D
-                
-                if (precioBs || precioRef) {
-                    const pos = cuadrantes[i];
-                    htmlFinal += `
-                        <div class="dato-dinamico ${pos.ref}">${precioRef}</div>
-                        <div class="dato-dinamico ${pos.bs}">${precioBs}</div>
-                    `;
-                }
-            }
-        });
-        contenedor.innerHTML = htmlFinal;
-    }
-
-    async function sincronizar() {
-        try {
-            const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
-            const csvText = await res.text();
-            localStorage.setItem('backup_m8', csvText);
-            renderizarMenu(csvText);
-        } catch (e) {
-            const backup = localStorage.getItem('backup_m8');
-            if (backup) renderizarMenu(backup);
-        }
-    }
-
-    sincronizar();
-    setInterval(sincronizar, 60000); // Actualiza cada minuto para no saturar tu conexión
 </script>
 </body>
 </html>
