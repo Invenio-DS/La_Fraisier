@@ -2,66 +2,84 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Jugo Único</title>
+    <title>INVENIO - Menú 8 Jugo Único</title>
     <style>
+        /* Carga de fuente personalizada */
         @font-face {
             font-family: 'HandelsonFour';
-            src: url('./Handelson-Four.otf') format('opentype');
+            src: url('./handelson-Four.otf') format('opentype');
+            font-weight: normal; font-style: normal;
         }
 
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background-color: #000; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
         }
 
         .menu-wrapper {
             position: relative;
             width: 100vw; height: 100vh; 
+            overflow: hidden;
         }
 
+        /* Video de fondo */
         #bg-video {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            object-fit: cover; z-index: 1;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
         }
 
+        /* Capa de precios por encima del video */
         #precios-layer {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 999;
             pointer-events: none;
         }
 
         .dato-dinamico {
             position: absolute;
-            font-family: 'HandelsonFour', sans-serif;
+            font-family: 'HandelsonFour', 'Arial Black', sans-serif;
             color: #FFFFFF;
-            text-shadow: 3px 3px 6px rgba(0,0,0,1);
-            text-align: right; 
-            width: 300px; /* Más ancho para precios grandes */
+            text-shadow: 4px 4px 8px rgba(0,0,0,1);
+            white-space: nowrap;
+            text-align: center; 
+            width: 100%; /* Centrado respecto al ancho total */
         }
 
-        /* --- COORDENADAS PARA EL PRODUCTO ÚNICO --- */
-        /* Ajusta estos valores para centrarlo donde desees en el video */
+        /* --- POSICIÓN DEL PRECIO ÚNICO (Ajusta los 'top' si es necesario) --- */
         .pos-ref { 
-            top: 40%; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            font-size: 5vw; 
-            color: #00FF00; 
+            top: 42%; 
+            font-size: 6vw; 
+            color: #FFFFFF; /* Color BLANCO para la Referencia */
         }
 
         .pos-bs { 
-            top: 52%; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            font-size: 3.5vw; 
+            top: 55%; 
+            font-size: 3.8vw; 
+            color: #FFFFFF;
         }
 
+        /* Indicador de estado discreto */
         #debug-status {
-            position: fixed; bottom: 5px; left: 5px;
-            color: yellow; font-size: 10px; z-index: 1000;
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-size: 14px;
+            z-index: 1000;
+            transition: opacity 0.5s;
+            font-family: sans-serif;
         }
+        .online { color: #00FF00; opacity: 0.3; } /* Visto bueno casi transparente */
+        .offline { color: #FF0000; opacity: 1; }  /* X roja si falla internet */
     </style>
 </head>
 <body>
@@ -70,14 +88,17 @@
         <video autoplay muted loop playsinline id="bg-video">
             <source src="Menu8.mp4" type="video/mp4">
         </video>
+        
         <div id="precios-layer"></div>
     </div>
 
-    <div id="debug-status">Conectando...</div>
+    <div id="debug-status" class="online">...</div>
 
 <script>
+    // URL de tu Google Sheets (Pestaña Jugos GID: 1499002722)
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1499002722&single=true&output=csv";
 
+    // Función para procesar el texto del CSV
     function parsearCSV(linea) {
         const columnas = [];
         let celda = "", dentroComillas = false;
@@ -92,41 +113,56 @@
         return columnas;
     }
 
+    // Función para dibujar los precios en pantalla
     function renderizarMenu(csvText) {
         const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
         const contenedor = document.getElementById('precios-layer');
         const debug = document.getElementById('debug-status');
         
-        // ACCEDEMOS DIRECTO A LA LÍNEA 2 (Índice 1 en programación)
+        // Acceso directo a la Fila 2 (producto único)
         if (lineas.length >= 2) {
             const col = parsearCSV(lineas[1]); 
-            const precioBs = col[1] ? col[1].trim() : "0.00"; // Columna B
-            const precioRef = col[3] ? col[3].trim() : "0.00"; // Columna D
+            const precioBs = col[1] ? col[1].trim() : "";  // Columna B
+            const precioRef = col[3] ? col[3].trim() : ""; // Columna D
 
             contenedor.innerHTML = `
                 <div class="dato-dinamico pos-ref">${precioRef}</div>
                 <div class="dato-dinamico pos-bs">${precioBs}</div>
             `;
-            debug.innerText = "Producto cargado desde Fila 2";
+            
+            debug.innerHTML = "✔"; // Visto bueno de conexión exitosa
+            debug.className = "online";
         } else {
-            debug.innerText = "Error: El Excel no tiene fila 2";
+            debug.innerHTML = "✘"; // Error de datos
+            debug.className = "offline";
         }
     }
 
+    // Función para descargar los datos de Google
     async function sincronizar() {
         try {
+            // cb= tiempo actual para evitar que el ISP use caché viejo
             const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
             const csvText = await res.text();
-            localStorage.setItem('backup_m8_unico', csvText);
+            
+            // Guardamos una copia local por si falla el internet después
+            localStorage.setItem('backup_m8_jugo', csvText);
             renderizarMenu(csvText);
         } catch (e) {
-            const backup = localStorage.getItem('backup_m8_unico');
-            if (backup) renderizarMenu(backup);
-            document.getElementById('debug-status').innerText = "Modo Offline (Sin Internet)";
+            // Si el internet (ISP) falla, usamos el último dato guardado
+            const backup = localStorage.getItem('backup_m8_jugo');
+            if (backup) {
+                renderizarMenu(backup);
+                document.getElementById('debug-status').innerHTML = "✘ (Offline)";
+                document.getElementById('debug-status').className = "offline";
+            }
         }
     }
 
+    // Iniciar al cargar la página
     sincronizar();
+
+    // Re-sincronizar cada 60 segundos
     setInterval(sincronizar, 60000);
 </script>
 </body>
