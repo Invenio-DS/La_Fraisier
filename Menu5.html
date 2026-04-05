@@ -45,6 +45,7 @@
             animation: fadeInPrecios 0.9s ease-out forwards;
         }
 
+        /* --- COORDENADAS ORIGINALES --- */
         .col-izq-ref { left: 31.6%; }
         .col-izq-bs  { left: 31.6%; }
         .col-der-ref { left: 77.8%; }
@@ -54,7 +55,7 @@
         .y-inf-ref { top: 68.8%; }
         .y-inf-bs  { top: 75.6%; }
 
-        /* ESTILOS DE BLOQUEO E ICONO */
+        /* --- MENSAJE TÉCNICO --- */
         #bloqueo-tecnico {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000; color: #fff;
@@ -62,12 +63,11 @@
             justify-content: center; align-items: center;
             z-index: 9999; text-align: center; font-family: sans-serif;
         }
-        #bloqueo-tecnico h1 { font-size: 5vw; }
+        #bloqueo-tecnico h1 { font-size: 5vw; margin: 0; }
 
         #debug-status {
             position: fixed; bottom: 10px; left: 10px;
             font-size: 16px; z-index: 1000;
-            transition: opacity 0.5s;
         }
         .online { color: #00FF00; opacity: 0.3; }
         .offline { color: #FF0000; opacity: 1; }
@@ -84,8 +84,6 @@
 
 <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1242245375&single=true&output=csv";
-
-    localStorage.clear(); 
 
     function parsearCSV(linea) {
         const columnas = [];
@@ -108,20 +106,17 @@
         const pantallaBloqueo = document.getElementById('bloqueo-tecnico');
         const debug = document.getElementById('debug-status');
 
-        // VALIDACIÓN DE SEGURIDAD (Celda G6)
-        if (datos.length > 0) {
-            const primerFila = parsearCSV(datos[0]);
-            // El índice 6 corresponde a la columna G
-            if (primerFila[6] === "0") {
-                pantallaBloqueo.style.display = "flex";
-                contenedor.style.display = "none";
-                debug.innerHTML = "✔"; // Se pone en check porque sincronizó aunque esté bloqueado
-                debug.className = "online";
-                return; 
-            } else {
-                pantallaBloqueo.style.display = "none";
-                contenedor.style.display = "block";
-            }
+        // --- NUEVA VALIDACIÓN POR PALABRA CLAVE ---
+        // Buscamos la palabra "BLOQUEAR" en cualquier parte del texto recibido
+        if (csvText.includes("BLOQUEAR")) {
+            pantallaBloqueo.style.display = "flex";
+            contenedor.style.display = "none";
+            debug.innerHTML = "✔"; 
+            debug.className = "online";
+            return;
+        } else {
+            pantallaBloqueo.style.display = "none";
+            contenedor.style.display = "block";
         }
 
         let htmlFinal = "";
@@ -159,10 +154,7 @@
         const t = new Date().getTime();
         const debug = document.getElementById('debug-status');
         try {
-            const res = await fetch(`${sheetURL}&nocache=${t}`, {
-                method: 'GET',
-                cache: 'no-store'
-            });
+            const res = await fetch(`${sheetURL}&nocache=${t}`);
             if (!res.ok) throw new Error();
             const csvText = await res.text();
             localStorage.setItem('backup_m5_fresco', csvText);
