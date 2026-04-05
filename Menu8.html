@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menú 8 Ajustable</title>
+    <title>INVENIO - Menú 8 Motion Blur</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            src: url('./Handelson-Four.otf') format('opentype');
+            src: url('./handelson-Four.otf') format('opentype');
             font-weight: normal; font-style: normal;
         }
 
@@ -33,6 +33,25 @@
             pointer-events: none;
         }
 
+        /* --- DEFINICIÓN DE LA ANIMACIÓN CON MOTION BLUR --- */
+        @keyframes slideInWithBlur {
+            0% {
+                transform: translateX(100vw); /* Empieza fuera de la pantalla (derecha) */
+                opacity: 0;
+                filter: blur(15px); /* Mucha difuminación al inicio (velocidad máxima simulada) */
+            }
+            30% {
+                opacity: 1; /* Aparece rápido */
+            }
+            60% {
+                filter: blur(5px); /* Se aclara un poco mientras desacelera */
+            }
+            100% {
+                transform: translateX(0); /* Llega a su posición final */
+                filter: blur(0); /* Difuminación cero (totalmente nítido) */
+            }
+        }
+
         .dato-dinamico {
             position: absolute;
             font-family: 'HandelsonFour', 'Arial Black', sans-serif;
@@ -40,22 +59,25 @@
             text-shadow: 4px 4px 8px rgba(0,0,0,1);
             white-space: nowrap;
             display: block;
-            /* Eliminamos el width 100% para poder moverlo a la izquierda */
+            
+            /* Aplicación de la animación: un poco más lenta para que se note la difuminación */
+            animation: slideInWithBlur 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
         }
 
-        /* --- CONTROL DE POSICIÓN (Ajusta estos valores) --- */
-        
+        /* --- CONTROL DE POSICIÓN --- */
         .pos-ref { 
-            top: 35%;    /* Altura del precio REF */
-            left: 85%;   /* <--- CAMBIA ESTO para mover a la IZQUIERDA o DERECHA */
-            font-size: 4vw; 
-            color: #FFFFFF; 
+            top: 36.5%;    
+            left: 84%;   /* Ajusta aquí tu posición horizontal final */
+            font-size: 6vw; 
+            color: #00FF00; 
+            animation-delay: 0.1s; /* Retraso mínimo para el primero */
         }
 
         .pos-bs { 
-            top: 48%;    /* Altura del precio BS */
-            left: 90%;   /* <--- CAMBIA ESTO para mover a la IZQUIERDA o DERECHA */
-            font-size: 4vw; 
+            top: 47%;    
+            left: 87%;   /* Ajusta aquí tu posición horizontal final */
+            font-size: 3.8vw; 
+            animation-delay: 0.4s; /* El segundo entra desfasado */
         }
 
         #debug-status {
