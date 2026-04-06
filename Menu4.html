@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menú 4 L'fraisier</title>
+    <title>INVENIO - MenÃº 4 L'fraisier</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            /* CORRECCIÓN: Nombre exacto del archivo con H mayúscula */
+            /* CORRECCIÃ“N: Nombre exacto del archivo con H mayÃºscula */
             src: url('./Handelson-Four.otf') format('opentype');
             font-weight: normal; font-style: normal;
         }
@@ -47,7 +47,7 @@
         }
 
         /* --- COORDENADAS HORIZONTALES (X) --- */
-        /* Productos a la Izquierda (Mini Lunch / Tequeñón) */
+        /* Productos a la Izquierda (Mini Lunch / TequeÃ±Ã³n) */
         .col-izq-ref { left: 31.6%; }
         .col-izq-bs  { left: 31.6%; }
 
@@ -60,23 +60,45 @@
         .y-sup-ref { top: 29.7%; }
         .y-sup-bs  { top: 36.6%; }
 
-        /* Fila Inferior (Tequeñón y Empanadas) */
+        /* Fila Inferior (TequeÃ±Ã³n y Empanadas) */
         .y-inf-ref { top: 68.8%; }
         .y-inf-bs  { top: 75.6%; }
+
+        /* --- ESTILOS DE SEGURIDAD Y SINCRONIZACIÃ“N --- */
+        #bloqueo-tecnico {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; color: #fff;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; text-align: center; font-family: sans-serif;
+        }
+        #bloqueo-tecnico h1 { font-size: 5vw; margin: 0; }
+
+        #debug-status {
+            position: fixed; bottom: 10px; left: 10px;
+            font-size: 16px; z-index: 1000;
+        }
+        .online { color: #00FF00; opacity: 0.3; }
+        .offline { color: #FF0000; opacity: 1; }
 
     </style>
 </head>
 <body>
 
+    <div id="bloqueo-tecnico">
+        <h1>CONTACTAR AL SERVICIO TÃ‰CNICO</h1>
+    </div>
+
     <div class="menu-wrapper" id="menu-container"></div>
+    
+    <div id="debug-status"></div>
 
 <script>
-    // URL de la pestaña Menu 2 con GID verificado
+    // URL de la pestaÃ±a Menu 4 con GID verificado
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1581778122&single=true&output=csv";
 
-    // 1. LIMPIEZA INMEDIATA AL CARGAR (Para engañar a la TV)
+    // 1. LIMPIEZA INMEDIATA
     localStorage.clear(); 
-    console.log("INVENIO: Memoria de la TV limpiada por seguridad.");
 
     function parsearCSV(linea) {
         const columnas = [];
@@ -96,6 +118,21 @@
         const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
         const datos = lineas.slice(1); 
         const contenedor = document.getElementById('menu-container');
+        const pantallaBloqueo = document.getElementById('bloqueo-tecnico');
+        const debug = document.getElementById('debug-status');
+
+        // --- VALIDACIÃ“N DE SEGURIDAD POR PALABRA CLAVE ---
+        if (csvText.includes("BLOQUEAR")) {
+            pantallaBloqueo.style.display = "flex";
+            contenedor.style.display = "none";
+            debug.innerHTML = "?"; 
+            debug.className = "online";
+            return;
+        } else {
+            pantallaBloqueo.style.display = "none";
+            contenedor.style.display = "block";
+        }
+
         let htmlFinal = "";
 
         const cuadrantes = [
@@ -108,7 +145,6 @@
         datos.forEach((linea, i) => {
             if (i < 4) {
                 const col = parsearCSV(linea);
-                // B(1) = Bs | D(3) = Ref
                 if (col.length >= 4) {
                     const bs = col[1]; 
                     const ref = col[3];
@@ -126,40 +162,34 @@
         
         if (htmlFinal !== "") {
             contenedor.innerHTML = htmlFinal;
-            console.log("INVENIO: Precios renderizados.");
-        } else {
-            console.warn("INVENIO: El CSV llegó pero no tiene las 4 columnas esperadas.");
+            debug.innerHTML = "?";
+            debug.className = "online";
         }
     }
 
     async function sincronizar() {
         const t = new Date().getTime();
+        const debug = document.getElementById('debug-status');
         try {
-            // Fetch ultra-agresivo contra el caché
             const res = await fetch(`${sheetURL}&nocache=${t}`, {
                 method: 'GET',
-                cache: 'no-store',
-                mode: 'cors'
+                cache: 'no-store'
             });
 
             if (!res.ok) throw new Error("Error de red");
-            
             const csvText = await res.text();
-            
-            // Guardamos el backup fresco del Menú 2
-            localStorage.setItem('backup_m2_fresco', csvText);
+            localStorage.setItem('backup_m4_fresco', csvText);
             renderizarMenu(csvText);
 
         } catch (error) {
-            console.error("INVENIO: Error en sincronización, intentando backup.");
-            const backup = localStorage.getItem('backup_m2_fresco');
+            const backup = localStorage.getItem('backup_m4_fresco');
             if (backup) renderizarMenu(backup);
+            debug.innerHTML = "?";
+            debug.className = "offline";
         }
     }
 
-    // Ejecutar al iniciar
     sincronizar();
-    // Refresco cada 2 minutos
     setInterval(sincronizar, 120000);
 </script>
 </body>
