@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>INVENIO - Menú 6 L'fraisier</title>
+    <style>
+        @font-face {
+            font-family: 'HandelsonFour';
+            src: url('./Handelson-Four.otf') format('opentype');
+            font-weight: normal; font-style: normal;
+        }
+
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: #000; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .menu-wrapper {
+            position: relative;
+            width: 100vw; height: 56.25vw; 
+            max-width: 1920px; max-height: 1080px;
+            background-image: url('Menu6.png') !important;
+            background-size: cover;
+            background-position: center;
+            z-index: 1;
+        }
+
+        @keyframes fadeInPrecios {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .dato-dinamico {
+            position: absolute;
+            font-family: 'HandelsonFour', sans-serif;
+            color: #FFFFFF;
+            font-size: 2vw;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            white-space: nowrap;
+            display: block;
+            text-align: right; 
+            width: 140px; 
+            opacity: 0;
+            animation: fadeInPrecios 0.8s ease-out forwards;
+        }
+
+        /* --- COORDENADAS HORIZONTALES (X) --- */
+        /* IZQUIERDA (Items 1 y 2) */
+        .col-izq-ref { left: 18.5%; }
+        .col-izq-bs  { left: 18.5%; }
+
+        /* CENTRO (Items 3 y 4) */
+        .col-cen-ref { left: 48.5%; }
+        .col-cen-bs  { left: 48.5%; }
+
+        /* DERECHA (Items 5 y 6) */
+        .col-der-ref { left: 78.5%; }
+        .col-der-bs  { left: 78.5%; }
+
+        /* --- COORDENADAS VERTICALES (Y) --- */
+        .y-ref { top: 68.5%; } /* Fila para montos REF */
+        .y-bs  { top: 75.5%; } /* Fila para montos BS */
+
+        /* --- BLOQUEO Y ESTADO --- */
+        #bloqueo-tecnico {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; color: #fff;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; text-align: center; font-family: sans-serif;
+        }
+        #debug-status {
+            position: fixed; bottom: 10px; left: 10px;
+            font-size: 16px; z-index: 1000;
+        }
+        .online { color: #00FF00; opacity: 0.3; }
+        .offline { color: #FF0000; opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div id="bloqueo-tecnico"><h1>CONTACTAR AL SERVICIO TÉCNICO</h1></div>
+
+    <div class="menu-wrapper" id="menu-container"></div>
+    <div id="debug-status"></div>
+
+<script>
+    // URL corregida para Menu 6 (Asegúrate que el GID sea el correcto de tu hoja)
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=646033471&single=true&output=csv";
+
+    let lastData = ""; 
+
+    function parsearCSV(linea) {
+        const columnas = [];
+        let celda = "", dentroComillas = false;
+        for (let char of linea) {
+            if (char === '"') dentroComillas = !dentroComillas;
+            else if (char === ',' && !dentroComillas) {
+                columnas.push(celda.trim());
+                celda = "";
+            } else celda += char;
+        }
+        columnas.push(celda.trim());
+        return columnas;
+    }
+
+    function renderizarMenu(csvText) {
+        if (csvText === lastData) return;
+        lastData = csvText;
+
+        const contenedor = document.getElementById('menu-container');
+        const pantallaBloqueo = document.getElementById('bloqueo-tecnico');
+        const debug = document.getElementById('debug-status');
+
+        if (csvText.includes("BLOQUEAR")) {
+            pantallaBloqueo.style.display = "flex";
+            contenedor.style.display = "none";
+            return;
+        }
+
+        pantallaBloqueo.style.display = "none";
+        contenedor.style.display = "block";
+
+        const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
+        const datos = lineas.slice(1); 
+        
+        let htmlFinal = "";
+        
+        // Mapeo de columnas para 6 items
+        const configPos = [
+            { ref: "col-izq-ref y-ref", bs: "col-izq-bs y-bs" }, // Item 1
+            { ref: "col-izq-ref y-ref", bs: "col-izq-bs y-bs" }, // Item 2 (Ajustar top si van uno bajo otro)
+            { ref: "col-cen-ref y-ref", bs: "col-cen-bs y-bs" }, // Item 3
+            { ref: "col-cen-ref y-ref", bs: "col-cen-bs y-bs" }, // Item 4
+            { ref: "col-der-ref y-ref", bs: "col-der-bs y-bs" }, // Item 5
+            { ref: "col-der-ref y-ref", bs: "col-der-bs y-bs" }  // Item 6
+        ];
+
+        /* NOTA: Como pediste 2 centrales uno al lado del otro y 2 en los extremos, 
+           ajusté las clases. Si necesitas que los 2 de la izquierda estén uno arriba y otro abajo, 
+           deberías crear clases .y-sup y .y-inf como en el Menu 5. */
+
+        datos.forEach((linea, i) => {
+            if (i < 6) {
+                const col = parsearCSV(linea);
+                const precioBs = col[1] || "";
+                const precioRef = col[3] || "";
+                
+                if (precioBs !== "") {
+                    // Distribución lógica según el índice
+                    let claseX = "col-izq";
+                    if (i >= 2 && i <= 3) claseX = "col-cen";
+                    if (i >= 4) claseX = "col-der";
+
+                    const delay = i * 0.1;
+                    htmlFinal += `
+                        <div class="dato-dinamico ${claseX}-ref y-ref" style="animation-delay: ${delay}s">${precioRef}</div>
+                        <div class="dato-dinamico ${claseX}-bs y-bs" style="animation-delay: ${delay + 0.05}s">${precioBs}</div>
+                    `;
+                }
+            }
+        });
+
+        contenedor.innerHTML = htmlFinal;
+        debug.innerHTML = "?"; debug.className = "online";
+    }
+
+    async function sincronizar() {
+        try {
+            const res = await fetch(`${sheetURL}&cb=${Date.now()}`);
+            const csvText = await res.text();
+            localStorage.setItem('backup_m6', csvText);
+            renderizarMenu(csvText);
+        } catch (e) {
+            const backup = localStorage.getItem('backup_m6');
+            if (backup) renderizarMenu(backup);
+            document.getElementById('debug-status').innerHTML = "?";
+            document.getElementById('debug-status').className = "offline";
+        }
+    }
+
+    sincronizar();
+    setInterval(sincronizar, 60000);
+</script>
+</body>
+</html>
