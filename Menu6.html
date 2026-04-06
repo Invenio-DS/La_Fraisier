@@ -20,7 +20,7 @@
             position: relative;
             width: 100vw; height: 56.25vw; 
             max-width: 1920px; max-height: 1080px;
-            background-image: url('Menu6.png') !important;
+            background-image: url('Menu6.jpg') !important;
             background-size: cover;
             background-position: center;
             z-index: 1;
@@ -35,33 +35,41 @@
             position: absolute;
             font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
-            font-size: 2vw;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-size: 2.1vw; /* Ajustado para el tamaño de las cápsulas */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
             white-space: nowrap;
             display: block;
             text-align: right; 
-            width: 120px; 
+            width: 130px; 
             opacity: 0;
             animation: fadeInPrecios 0.8s ease-out forwards;
         }
 
-        /* --- COORDENADAS HORIZONTALES (X) --- */
-        /* IZQUIERDA (Item 2 ) */
-        .col-izq-ref { left: 12.5%; }
-        .col-izq-bs  { left: 12.5%; }
+        /* --- POSICIONAMIENTO MANUAL POR ITEM (Según tu Imagen) --- */
 
-        /* CENTRO (Items 1, 3 y 4 ) */
-        .col-cen-ref { left: 48.5%; }
-        .col-cen-bs  { left: 48.5%; }
-        .col-cen-bs  { left: 48.5%; }
+        /* 1. Bandeja Pasta Seca (Superior Izquierda/Centro) */
+        .item-0-ref { top: 30.5%; left: 39.5%; }
+        .item-0-bs  { top: 37.5%; left: 39.5%; }
 
-        /* DERECHA (Items 5 y 6) */
-        .col-der-ref { left: 78.5%; }
-        .col-der-bs  { left: 78.5%; }
+        /* 2. Pastel de Manzana (Superior Derecha) */
+        .item-1-ref { top: 30.5%; left: 86.8%; }
+        .item-1-bs  { top: 37.5%; left: 86.8%; }
 
-        /* --- COORDENADAS VERTICALES (Y) --- */
-        .y-ref { top: 68.5%; } /* Fila para montos REF */
-        .y-bs  { top: 75.5%; } /* Fila para montos BS */
+        /* 3. Ponquesitos 6 Uds (Inferior Izquierda) */
+        .item-2-ref { top: 70.8%; left: 10.2%; }
+        .item-2-bs  { top: 77.8%; left: 10.2%; }
+
+        /* 4. Ponquesitos 4 Uds (Inferior Centro-Izquierda) */
+        .item-3-ref { top: 70.8%; left: 41.6%; }
+        .item-3-bs  { top: 77.8%; left: 41.6%; }
+
+        /* 5. Golfeado Clásico (Inferior Centro-Derecha) */
+        .item-4-ref { top: 70.8%; left: 58.5%; }
+        .item-4-bs  { top: 77.8%; left: 58.5%; }
+
+        /* 6. Golfeado con Queso (Inferior Derecha) */
+        .item-5-ref { top: 70.8%; left: 89.2%; }
+        .item-5-bs  { top: 77.8%; left: 89.2%; }
 
         /* --- BLOQUEO Y ESTADO --- */
         #bloqueo-tecnico {
@@ -87,8 +95,7 @@
     <div id="debug-status"></div>
 
 <script>
-    // URL corregida para Menu 6 (Asegúrate que el GID sea el correcto de tu hoja)
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=193312628&single=true&output=csv";
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=646033471&single=true&output=csv";
 
     let lastData = ""; 
 
@@ -127,20 +134,6 @@
         const datos = lineas.slice(1); 
         
         let htmlFinal = "";
-        
-        // Mapeo de columnas para 6 items
-        const configPos = [
-            { ref: "col-cen-ref y-ref", bs: "col-cen-bs y-bs" }, // Item 1
-            { ref: "col-izq-ref y-ref", bs: "col-izq-bs y-bs" }, // Item 2 (Ajustar top si van uno bajo otro)
-            { ref: "col-cen-ref y-ref", bs: "col-cen-bs y-bs" }, // Item 3
-            { ref: "col-cen-ref y-ref", bs: "col-cen-bs y-bs" }, // Item 4
-            { ref: "col-der-ref y-ref", bs: "col-der-bs y-bs" }, // Item 5
-            { ref: "col-der-ref y-ref", bs: "col-der-bs y-bs" }  // Item 6
-        ];
-
-        /* NOTA: Como pediste 2 centrales uno al lado del otro y 2 en los extremos, 
-           ajusté las clases. Si necesitas que los 2 de la izquierda estén uno arriba y otro abajo, 
-           deberías crear clases .y-sup y .y-inf como en el Menu 5. */
 
         datos.forEach((linea, i) => {
             if (i < 6) {
@@ -149,22 +142,17 @@
                 const precioRef = col[3] || "";
                 
                 if (precioBs !== "") {
-                    // Distribución lógica según el índice
-                    let claseX = "col-izq";
-                    if (i >= 2 && i <= 3) claseX = "col-cen";
-                    if (i >= 4) claseX = "col-der";
-
                     const delay = i * 0.1;
                     htmlFinal += `
-                        <div class="dato-dinamico ${claseX}-ref y-ref" style="animation-delay: ${delay}s">${precioRef}</div>
-                        <div class="dato-dinamico ${claseX}-bs y-bs" style="animation-delay: ${delay + 0.05}s">${precioBs}</div>
+                        <div class="dato-dinamico item-${i}-ref" style="animation-delay: ${delay}s">${precioRef}</div>
+                        <div class="dato-dinamico item-${i}-bs" style="animation-delay: ${delay + 0.05}s">${precioBs}</div>
                     `;
                 }
             }
         });
 
         contenedor.innerHTML = htmlFinal;
-        debug.innerHTML = "?"; debug.className = "online";
+        debug.innerHTML = "✔"; debug.className = "online";
     }
 
     async function sincronizar() {
@@ -176,7 +164,7 @@
         } catch (e) {
             const backup = localStorage.getItem('backup_m6');
             if (backup) renderizarMenu(backup);
-            document.getElementById('debug-status').innerHTML = "?";
+            document.getElementById('debug-status').innerHTML = "✘";
             document.getElementById('debug-status').className = "offline";
         }
     }
