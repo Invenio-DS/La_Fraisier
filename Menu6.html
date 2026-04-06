@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Menú 6 L'fraisier</title>
+    <title>INVENIO - MenÃº 6 L'fraisier</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
@@ -80,14 +80,14 @@
 </head>
 <body>
 
-    <div id="bloqueo-tecnico"><h1>CONTACTAR AL SERVICIO TÉCNICO</h1></div>
+    <div id="bloqueo-tecnico"><h1>CONTACTAR AL SERVICIO TÃ‰CNICO</h1></div>
 
     <div class="menu-wrapper" id="menu-container"></div>
     <div id="debug-status"></div>
 
 <script>
-    // URL corregida para Menu 6 (Asegúrate que el GID sea el correcto de tu hoja)
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=646033471&single=true&output=csv";
+    // URL corregida para Menu 6 (AsegÃºrate que el GID sea el correcto de tu hoja)
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=193312628&single=true&output=csv";
 
     let lastData = ""; 
 
@@ -138,8 +138,8 @@
         ];
 
         /* NOTA: Como pediste 2 centrales uno al lado del otro y 2 en los extremos, 
-           ajusté las clases. Si necesitas que los 2 de la izquierda estén uno arriba y otro abajo, 
-           deberías crear clases .y-sup y .y-inf como en el Menu 5. */
+           ajustÃ© las clases. Si necesitas que los 2 de la izquierda estÃ©n uno arriba y otro abajo, 
+           deberÃ­as crear clases .y-sup y .y-inf como en el Menu 5. */
 
         datos.forEach((linea, i) => {
             if (i < 6) {
@@ -148,7 +148,7 @@
                 const precioRef = col[3] || "";
                 
                 if (precioBs !== "") {
-                    // Distribución lógica según el índice
+                    // DistribuciÃ³n lÃ³gica segÃºn el Ã­ndice
                     let claseX = "col-izq";
                     if (i >= 2 && i <= 3) claseX = "col-cen";
                     if (i >= 4) claseX = "col-der";
