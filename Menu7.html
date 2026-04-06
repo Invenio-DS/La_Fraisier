@@ -33,7 +33,7 @@
             pointer-events: none;
         }
 
-        /* --- ANIMACIÓN CON MOTION BLUR --- */
+        /* --- ANIMACIÓN CORREGIDA --- */
         @keyframes slideInWithBlur {
             0% {
                 transform: translateX(100vw);
@@ -44,6 +44,7 @@
             60% { filter: blur(5px); }
             100% {
                 transform: translateX(0);
+                opacity: 1; 
                 filter: blur(0);
             }
         }
@@ -55,26 +56,15 @@
             text-shadow: 4px 4px 8px rgba(0,0,0,1);
             white-space: nowrap;
             display: block;
+            /* forwards mantiene el estado final visible */
             animation: slideInWithBlur 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
             opacity: 0;
         }
 
-        /* --- CONTROL DE POSICIÓN --- */
-        .pos-ref { 
-            top: 36.5%;    
-            left: 84%;   
-            font-size: 4vw; 
-            animation-delay: 0.1s;
-        }
+        /* --- POSICIONES --- */
+        .pos-ref { top: 36.5%; left: 84%; font-size: 4vw; animation-delay: 0.1s; }
+        .pos-bs { top: 47.6%; left: 79.8%; font-size: 4vw; animation-delay: 0.3s; }
 
-        .pos-bs { 
-            top: 47.6%;    
-            left: 79.8%;   
-            font-size: 4vw; 
-            animation-delay: 0.3s;
-        }
-
-        /* --- ESTILOS DE SEGURIDAD Y ESTADO --- */
         #bloqueo-tecnico {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000; color: #fff;
@@ -82,7 +72,7 @@
             justify-content: center; align-items: center;
             z-index: 9999; text-align: center; font-family: sans-serif;
         }
-        #bloqueo-tecnico h1 { font-size: 5vw; margin: 0; }
+        #bloqueo-tecnico h1 { font-size: 5vw; }
 
         #debug-status {
             position: fixed; bottom: 10px; left: 10px;
@@ -94,9 +84,7 @@
 </head>
 <body>
 
-    <div id="bloqueo-tecnico">
-        <h1>CONTACTAR AL SERVICIO TÉCNICO</h1>
-    </div>
+    <div id="bloqueo-tecnico"><h1>CONTACTAR AL SERVICIO TÉCNICO</h1></div>
 
     <div class="menu-wrapper" id="main-content">
         <video autoplay muted loop playsinline id="bg-video">
@@ -109,9 +97,8 @@
 
 <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1026047109&single=true&output=csv";
-
-    // Limpieza de seguridad
-    localStorage.clear();
+    
+    let lastData = ""; // Almacena el último CSV recibido para comparar
 
     function parsearCSV(linea) {
         const columnas = [];
@@ -128,23 +115,24 @@
     }
 
     function renderizarMenu(csvText) {
+        // CORRECCIÓN CLAVE: Si los datos no han cambiado, no toques el HTML
+        if (csvText === lastData) return;
+        lastData = csvText;
+
         const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
         const contenedor = document.getElementById('precios-layer');
         const mainContent = document.getElementById('main-content');
         const pantallaBloqueo = document.getElementById('bloqueo-tecnico');
         const debug = document.getElementById('debug-status');
 
-        // --- VALIDACIÓN DE SEGURIDAD ---
         if (csvText.includes("BLOQUEAR")) {
             pantallaBloqueo.style.display = "flex";
             mainContent.style.display = "none";
-            debug.innerHTML = "?"; 
-            debug.className = "online";
             return;
-        } else {
-            pantallaBloqueo.style.display = "none";
-            mainContent.style.display = "block";
         }
+
+        pantallaBloqueo.style.display = "none";
+        mainContent.style.display = "block";
 
         if (lineas.length >= 2) {
             const col = parsearCSV(lineas[1]); 
@@ -156,36 +144,29 @@
                 <div class="dato-dinamico pos-bs">${precioBs}</div>
             `;
             
-            debug.innerHTML = "?"; 
+            debug.innerHTML = "✔"; 
             debug.className = "online";
-        } else {
-            debug.innerHTML = "?"; 
-            debug.className = "offline";
         }
     }
 
     async function sincronizar() {
-        const t = new Date().getTime();
-        const debug = document.getElementById('debug-status');
         try {
-            const res = await fetch(`${sheetURL}&nocache=${t}`, {
-                method: 'GET',
-                cache: 'no-store'
-            });
+            const res = await fetch(`${sheetURL}&cb=${Date.now()}`);
             if (!res.ok) throw new Error();
             const csvText = await res.text();
-            localStorage.setItem('backup_m7_motion', csvText);
+            localStorage.setItem('backup_m7', csvText);
             renderizarMenu(csvText);
         } catch (e) {
-            const backup = localStorage.getItem('backup_m7_motion');
+            const backup = localStorage.getItem('backup_m7');
             if (backup) renderizarMenu(backup);
-            debug.innerHTML = "?";
-            debug.className = "offline";
+            document.getElementById('debug-status').innerHTML = "✘";
+            document.getElementById('debug-status').className = "offline";
         }
     }
 
     sincronizar();
-    setInterval(sincronizar, 120000); // Sincroniza cada 2 minutos
+    // Revisamos cada 30 segundos, pero el render solo ocurre si cambias algo en el Excel
+    setInterval(sincronizar, 30000); 
 </script>
 </body>
 </html>
