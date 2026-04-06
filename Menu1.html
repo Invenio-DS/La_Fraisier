@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>INVENIO - Digital Signage</title>
+    <title>INVENIO - Digital Signage Menú 1</title>
     <style>
         @font-face {
             font-family: 'HandelsonFour';
-            src: url('./Handelson-Four.otf') format('opentype');
+            src: url('./handelson-Four.otf') format('opentype');
             font-weight: normal; font-style: normal;
         }
 
@@ -16,7 +16,6 @@
             min-height: 100vh; overflow: hidden;
         }
 
-        /* Forzamos que el contenedor sea visible */
         .menu-wrapper {
             position: relative;
             width: 100vw; height: 56.25vw; 
@@ -28,7 +27,6 @@
             z-index: 1;
         }
 
-        /* 1. Definir la animación de entrada */
         @keyframes fadeInPrecios {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
@@ -38,43 +36,60 @@
             position: absolute;
             font-family: 'HandelsonFour', sans-serif;
             color: #FFFFFF;
-            font-size: 2.3vw;
+            font-size: 2vw;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             white-space: nowrap;
-            
-            /* 2. ALINEACIÓN A LA DERECHA */
             display: block;
             text-align: right; 
-            width: 150px; /* Ancho fijo para que el 'right' tenga un eje común */
-            
-            /* 3. APLICAR ANIMACIÓN */
+            width: 150px; 
             animation: fadeInPrecios 1s ease-out forwards;
+            opacity: 0;
         }
 
-        /* Ajustamos el "left" para que el borde derecho coincida con tu diseño */
-        /* Columna B (Bs) - Ahora mapeada a col-bs */
-        .col-bs  { left: 76%; } 
-        
-        /* Columna D (Ref) - Ahora mapeada a col-ref */
-        .col-ref { left: 63%; }
+        /* --- COORDENADAS ORIGINALES MENÚ 1 --- */
+        .col-ref { left: 64%; } 
+        .col-bs  { left: 76%; }
 
-        /* Filas (Eje Y) */
         .fila-0 { top: 30.4%; } .fila-1 { top: 38.3%; } .fila-2 { top: 46.2%; }
         .fila-3 { top: 70.5%; } .fila-4 { top: 78.3%; }
+
+        /* --- ESTILOS DE SEGURIDAD Y ESTADO --- */
+        #bloqueo-tecnico {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; color: #fff;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            z-index: 9999; text-align: center; font-family: sans-serif;
+        }
+        #bloqueo-tecnico h1 { font-size: 5vw; margin: 0; }
+
+        #debug-status {
+            position: fixed; bottom: 10px; left: 10px;
+            font-size: 16px; z-index: 1000;
+        }
+        .online { color: #00FF00; opacity: 0.3; }
+        .offline { color: #FF0000; opacity: 1; }
     </style>
 </head>
 <body>
 
-    <div class="menu-wrapper" id="menu-container">
+    <div id="bloqueo-tecnico">
+        <h1>CONTACTAR AL SERVICIO TÉCNICO</h1>
     </div>
+
+    <div class="menu-wrapper" id="menu-container"></div>
+    
+    <div id="debug-status"></div>
 
 <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=996245756&single=true&output=csv";
 
+    // Limpieza de seguridad al arrancar
+    localStorage.clear();
+
     function parsearCSV(linea) {
         const columnas = [];
-        let celda = "";
-        let dentroComillas = false;
+        let celda = "", dentroComillas = false;
         for (let char of linea) {
             if (char === '"') dentroComillas = !dentroComillas;
             else if (char === ',' && !dentroComillas) {
@@ -86,52 +101,75 @@
         return columnas;
     }
 
-    // ESTA ES LA FUNCIÓN QUE FALTABA PARA MOSTRAR LOS PRECIOS
     function renderizarMenu(csvText) {
         const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
         const datos = lineas.slice(1); 
         const contenedor = document.getElementById('menu-container');
+        const pantallaBloqueo = document.getElementById('bloqueo-tecnico');
+        const debug = document.getElementById('debug-status');
+
+        // VALIDACIÓN DE SEGURIDAD
+        if (csvText.includes("BLOQUEAR")) {
+            pantallaBloqueo.style.display = "flex";
+            contenedor.style.display = "none";
+            debug.innerHTML = "✔"; 
+            debug.className = "online";
+            return;
+        } else {
+            pantallaBloqueo.style.display = "none";
+            contenedor.style.display = "block";
+        }
+
         let htmlFinal = "";
 
         datos.forEach((linea, i) => {
-            const col = parsearCSV(linea);
-            // B(1) = Bs | D(3) = Ref
-            if (col.length >= 4) {
-                const bs = col[1]; 
-                const ref = col[3];
-                if (bs && bs !== "") {
-                    const delay = i * 0.1;
-                    htmlFinal += `
-                        <div class="dato-dinamico col-bs fila-${i}" style="animation-delay: ${delay}s">${bs}</div>
-                        <div class="dato-dinamico col-ref fila-${i}" style="animation-delay: ${delay + 0.05}s">${ref}</div>
-                    `;
+            if (i < 5) { // Menú 1 maneja hasta 5 filas
+                const col = parsearCSV(linea);
+                if (col.length >= 4) {
+                    const precioBs = col[1]; 
+                    const precioRef = col[3];
+                    if (precioBs && precioBs !== "") {
+                        const delay = i * 0.08;
+                        htmlFinal += `
+                            <div class="dato-dinamico col-bs fila-${i}" style="animation-delay: ${delay}s">${precioBs}</div>
+                            <div class="dato-dinamico col-ref fila-${i}" style="animation-delay: ${delay + 0.04}s">${precioRef}</div>
+                        `;
+                    }
                 }
             }
         });
-        if (htmlFinal !== "") contenedor.innerHTML = htmlFinal;
+
+        contenedor.innerHTML = htmlFinal;
+        debug.innerHTML = "✔";
+        debug.className = "online";
     }
 
-    async function sincronizar() {
+    async function actualizarMenu() {
+        const t = new Date().getTime();
+        const debug = document.getElementById('debug-status');
         try {
-            const res = await fetch(`${sheetURL}&cb=${new Date().getTime()}`);
-            if (!res.ok) throw new Error("Error de red");
+            const res = await fetch(`${sheetURL}&nocache=${t}`, {
+                method: 'GET',
+                cache: 'no-store'
+            });
+            if (!res.ok) throw new Error();
             const csvText = await res.text();
-            localStorage.setItem('invenio_backup', csvText);
+            localStorage.setItem('backup_m1_fresco', csvText);
             renderizarMenu(csvText);
-            console.log("INVENIO: Sincronizado con éxito.");
         } catch (error) {
-            console.warn("INVENIO: Modo Offline - Usando caché local.");
-            const backup = localStorage.getItem('invenio_backup');
+            const backup = localStorage.getItem('backup_m1_fresco');
             if (backup) renderizarMenu(backup);
+            debug.innerHTML = "✘";
+            debug.className = "offline";
         }
     }
+
+    actualizarMenu();
+    setInterval(actualizarMenu, 120000); // Refresco cada 2 minutos
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
-
-    sincronizar();
-    setInterval(sincronizar, 300000);
 </script>
 </body>
 </html>
