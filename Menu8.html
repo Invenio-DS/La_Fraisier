@@ -33,7 +33,7 @@
             pointer-events: none;
         }
 
-        /* --- ANIMACIÓN CON MOTION BLUR --- */
+        /* --- ANIMACIÓN CORREGIDA --- */
         @keyframes slideInWithBlur {
             0% {
                 transform: translateX(100vw);
@@ -44,6 +44,7 @@
             60% { filter: blur(5px); }
             100% {
                 transform: translateX(0);
+                opacity: 1; /* Forzamos visibilidad final */
                 filter: blur(0);
             }
         }
@@ -55,26 +56,14 @@
             text-shadow: 4px 4px 8px rgba(0,0,0,1);
             white-space: nowrap;
             display: block;
+            /* forwards es vital para que no desaparezca al terminar */
             animation: slideInWithBlur 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
-            opacity: 0;
+            opacity: 0; 
         }
 
-        /* --- CONTROL DE POSICIÓN --- */
-        .pos-ref { 
-            top: 36.5%;    
-            left: 84%;   
-            font-size: 4vw; 
-            animation-delay: 0.1s;
-        }
+        .pos-ref { top: 36.5%; left: 84%; font-size: 4vw; animation-delay: 0.1s; }
+        .pos-bs { top: 47.6%; left: 79.8%; font-size: 4vw; animation-delay: 0.3s; }
 
-        .pos-bs { 
-            top: 47.6%;    
-            left: 79.8%;   
-            font-size: 4vw; 
-            animation-delay: 0.3s;
-        }
-
-        /* --- ESTILOS DE SEGURIDAD Y ESTADO --- */
         #bloqueo-tecnico {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: #000; color: #fff;
@@ -82,21 +71,15 @@
             justify-content: center; align-items: center;
             z-index: 9999; text-align: center; font-family: sans-serif;
         }
-        #bloqueo-tecnico h1 { font-size: 5vw; margin: 0; }
 
-        #debug-status {
-            position: fixed; bottom: 10px; left: 10px;
-            font-size: 14px; z-index: 1000;
-        }
+        #debug-status { position: fixed; bottom: 10px; left: 10px; font-size: 14px; z-index: 1000; }
         .online { color: #00FF00; opacity: 0.3; }
         .offline { color: #FF0000; opacity: 1; }
     </style>
 </head>
 <body>
 
-    <div id="bloqueo-tecnico">
-        <h1>CONTACTAR AL SERVICIO TÉCNICO</h1>
-    </div>
+    <div id="bloqueo-tecnico"><h1>CONTACTAR AL SERVICIO TÉCNICO</h1></div>
 
     <div class="menu-wrapper" id="main-content">
         <video autoplay muted loop playsinline id="bg-video">
@@ -109,9 +92,8 @@
 
 <script>
     const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=1499002722&single=true&output=csv";
-
-    // Limpieza de seguridad al inicio
-    localStorage.removeItem('backup_m8_jugo');
+    
+    let lastData = ""; // Para comparar si el contenido cambió
 
     function parsearCSV(linea) {
         const columnas = [];
@@ -128,64 +110,54 @@
     }
 
     function renderizarMenu(csvText) {
+        // Si los datos son idénticos a los actuales, no hacemos nada (evita parpadeo)
+        if (csvText === lastData) return;
+        lastData = csvText;
+
         const lineas = csvText.split(/\r?\n/).filter(l => l.trim() !== "");
         const contenedor = document.getElementById('precios-layer');
         const mainContent = document.getElementById('main-content');
         const pantallaBloqueo = document.getElementById('bloqueo-tecnico');
         const debug = document.getElementById('debug-status');
 
-        // VALIDACIÓN DE SEGURIDAD
         if (csvText.includes("BLOQUEAR")) {
             pantallaBloqueo.style.display = "flex";
             mainContent.style.display = "none";
-            debug.innerHTML = "?"; 
-            debug.className = "online";
             return;
-        } else {
-            pantallaBloqueo.style.display = "none";
-            mainContent.style.display = "block";
         }
+
+        pantallaBloqueo.style.display = "none";
+        mainContent.style.display = "block";
 
         if (lineas.length >= 2) {
             const col = parsearCSV(lineas[1]); 
-            const precioBs = col[1] ? col[1].trim() : ""; 
-            const precioRef = col[3] ? col[3].trim() : ""; 
+            const precioBs = col[1] || ""; 
+            const precioRef = col[3] || ""; 
 
             contenedor.innerHTML = `
                 <div class="dato-dinamico pos-ref">${precioRef}</div>
                 <div class="dato-dinamico pos-bs">${precioBs}</div>
             `;
-            
-            debug.innerHTML = "?"; 
-            debug.className = "online";
-        } else {
-            debug.innerHTML = "?"; 
-            debug.className = "offline";
+            debug.innerHTML = "✔"; debug.className = "online";
         }
     }
 
     async function sincronizar() {
-        const t = new Date().getTime();
-        const debug = document.getElementById('debug-status');
         try {
-            const res = await fetch(`${sheetURL}&cb=${t}`, {
-                method: 'GET',
-                cache: 'no-store'
-            });
-            if (!res.ok) throw new Error();
+            const res = await fetch(`${sheetURL}&cb=${Date.now()}`);
             const csvText = await res.text();
-            localStorage.setItem('backup_m8_jugo', csvText);
+            localStorage.setItem('backup_m8', csvText);
             renderizarMenu(csvText);
         } catch (e) {
-            const backup = localStorage.getItem('backup_m8_jugo');
+            const backup = localStorage.getItem('backup_m8');
             if (backup) renderizarMenu(backup);
-            debug.innerHTML = "?";
-            debug.className = "offline";
+            document.getElementById('debug-status').innerHTML = "✘";
+            document.getElementById('debug-status').className = "offline";
         }
     }
 
     sincronizar();
-    setInterval(sincronizar, 120000); // 2 minutos
+    setInterval(sincronizar, 30000); // Revisar cada 30 seg (más fluido)
 </script>
 </body>
 </html>
