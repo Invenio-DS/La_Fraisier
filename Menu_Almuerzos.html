@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Fraisier Riche - Men� TV</title>
+    <style>
+        :root { 
+            --bg-beige: #9e7548; 
+            --text-dark: #1a1a1a; 
+            --accent-gold: #c5a059; 
+            --paper-white: #f5f5dc; 
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, .header, .footer-contact, .dept-title, .global-menu-title, .qr-text { 
+            font-family: 'Montserrat', serif; 
+        }
+
+        body { 
+            background-color: var(--bg-beige); 
+            color: var(--text-dark); 
+            width: 100vw; height: 100vh; 
+            display: flex; align-items: center; justify-content: center; 
+            overflow: hidden; 
+        }
+
+        .menu-container { 
+            width: 98vw; height: 98vh; 
+            background: var(--paper-white); 
+            padding: 2vh 5vw; 
+            border: 0.15vh solid #d1d1bc; 
+            display: flex; flex-direction: column; 
+            position: relative; 
+        }
+
+        /* --- CABECERA --- */
+        .header { text-align: center; margin-bottom: 1vh; width: 100%; }
+        .main-title-text { font-size: clamp(2.4rem, 3.9vw, 4.5rem); font-weight: bold; color: var(--text-dark); text-transform: uppercase; letter-spacing: 2px; }
+        .sub-title-text { font-size: clamp(0.9rem, 1.4vw, 1.8rem); text-transform: uppercase; margin-bottom: 5px; }
+        .global-menu-title { font-size: clamp(1.5rem, 2.4vw, 2.7rem); font-weight: bold; text-transform: uppercase; color: var(--accent-gold); border-bottom: 1px solid var(--accent-gold); display: inline-block; padding: 0 20px; }
+
+        /* --- CONTENIDO --- */
+        #menu-wrapper { flex-grow: 1; position: relative; margin-top: 1vh; }
+        .menu-page { display: grid; grid-template-columns: 1fr 1fr; column-gap: 5vw; row-gap: 0.4vh; align-content: start; width: 100%; height: 100%; position: absolute; opacity: 0; transition: opacity 0.5s; visibility: hidden; }
+        .menu-page.active { opacity: 1; visibility: visible; }
+        .dept-title { grid-column: 1 / -1; color: var(--accent-gold); text-transform: uppercase; font-size: clamp(1.2rem, 1.8vw, 2rem); margin: 0.8vh 0 0.2vh 0; border-bottom: 2px solid var(--accent-gold); }
+        
+        .menu-row { 
+            display: flex; justify-content: space-between; align-items: baseline; 
+            padding: 0.3vh 0; border-bottom: 1px dotted #d1d1bc; 
+            font-family: 'Calibri', sans-serif; 
+        }
+        .dish-name { font-weight: bold; font-size: clamp(1rem, 1.3vw, 1.5rem); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Contenedor de Precios: USD a la izquierda, BS a la derecha */
+        .price-container { display: flex; gap: 2vw; min-width: 16vw; justify-content: flex-end; margin-left: 10px; }
+        .price-wrapper { display: flex; justify-content: flex-end; gap: 4px; align-items: baseline; }
+        
+        .col-symbol { font-weight: bold; font-size: clamp(0.90rem, 1.3vw, 1.5rem); color: var(--accent-gold); }
+        .col-price { font-weight: bold; font-size: clamp(0.90rem, 1.3vw, 1.5rem); color: var(--text-dark); }
+
+        /* --- PIE DE P�GINA --- */
+        .footer-contact { 
+            margin-top: auto; padding-top: 1vh; 
+            display: flex; justify-content: space-between; align-items: left; 
+            border-top: 2px solid var(--bg-beige); height: 16vh;
+            position: relative;
+        }
+
+        .contact-info { font-size: 1.4vw; line-height: 1.5; flex: 1; }
+        .legal-notice { margin-top: 5px; font-size:1.5vw; font-weight: bold; color: #444; }
+        
+        .qr-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+        .qr-box { 
+            background: white; border: 2px solid var(--accent-gold); padding: 4px; border-radius: 8px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2), inset 0 1px 3px rgba(255,255,255,0.8);
+        }
+        .qr-box img { width: 12vh; height: 12vh; display: block; }
+        .qr-text { font-size: 0.9vw; font-weight: bold; color: var(--text-dark); margin-top: 5px; text-transform: uppercase; }
+
+        .tasa-column { display: flex; flex-direction: column; align-items: center; flex: 1; }
+
+        .widget-tasa-rect { 
+            border: 2px solid var(--accent-gold); border-radius: 8px; background: #fff; 
+            display: flex; align-items: center; padding: 8px 11px;
+            width: auto; min-width: 12vw; height: 8vh; gap: 15px;
+            font-family: 'Calibri', sans-serif;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.18), inset 0 1px 2px rgba(255,255,255,0.7);
+        }
+        
+        .tasa-logo { height: 6vh; }
+        .tasa-data { display: flex; flex-direction: column; justify-content: center; text-align: left; }
+        .tasa-label { font-size: 0.9vw; font-weight: bold; color: var(--text-dark); margin-bottom: 1px; }
+        .valor-bcv-container { display: flex; align-items: baseline; gap: 6px; }
+        .valor-bcv { font-size: 1.3vw; font-weight: 800; color: #1a1a1a; }
+        .moneda-label { font-size: 0.8vw; font-weight: bold; color: #444; }
+        #f-bcv { font-size: 0.75vw; color: #64748b; margin-top: 1px; font-weight: bold; }
+
+        #page-indicator { font-weight: bold; color: var(--accent-gold); font-size: 0.6vw; margin-top: 12px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <div class="menu-container">
+        <header class="header">
+            <div class="main-title-text">L'FRAISIER RICHE</div>
+            <div class="sub-title-text">Pasteleria, Cafe, Restaurante</div>
+            <div class="global-menu-title">Menu del Dia</div>
+        </header>
+
+        <div id="menu-wrapper">
+            <div id="page1" class="menu-page"></div>
+            <div id="page2" class="menu-page"></div>
+        </div>
+
+        <div class="footer-contact">
+            <div class="contact-info">
+                <strong>DELIVERY:</strong> 0412-996-6247 / 0414-288-5199<br>
+                <strong>INSTAGRAM:</strong> @fraisierpasteleria
+                <div class="legal-notice">"PRECIOS INCLUYEN EL I.V.A."</div>
+            </div>
+            
+            <div class="qr-container">
+                <div class="qr-box">
+                    <img id="qr-img" src="" alt="QR">
+                </div>
+                <div class="qr-text">Escanea el menu</div>
+            </div>
+            
+            <div class="tasa-column">
+                <div class="widget-tasa-rect">
+                    <img src="https://drive.google.com/thumbnail?id=1IonvtvVyrtb1zGwggXqcpsSRCEfFfiLd&sz=w1000" class="tasa-logo" alt="BCV">
+                    <div class="tasa-data">
+                        <div class="tasa-label">TASA BCV OFICIAL</div>
+                        <div class="valor-bcv-container">
+                            <span id="t-bcv" class="valor-bcv">---</span>
+                            <span class="moneda-label">Bs./USD</span>
+                        </div>
+                        <div id="f-bcv">00/00/0000</div>
+                    </div>
+                </div>
+                <div id="page-indicator"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRP_2V2eaoFc7-LdDWqGKGPNjAnTsjzUDnPSixlq8cL3M0acXOwobipdRIyvBGBzyMr0OmPCDTjTbOZ/pub?gid=0&single=true&output=csv';
+        const API_DOLAR = "https://ve.dolarapi.com/v1/dolares/oficial";
+
+        function renderRotation(hasTwo) {
+            const segs = new Date().getSeconds();
+            const p = (segs < 30 || !hasTwo) ? 1 : 2;
+            document.getElementById('page1').classList.toggle('active', p === 1);
+            document.getElementById('page2').classList.toggle('active', p === 2);
+            document.getElementById('page-indicator').innerText = hasTwo ? `P�GINA ${p} / 2` : "";
+        }
+
+        async function updateData() {
+            try {
+                // Tasa
+                const resT = await fetch(API_DOLAR);
+                const dataT = await resT.json();
+                document.getElementById('t-bcv').innerText = dataT.promedio.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('f-bcv').innerText = new Date().toLocaleDateString('es-VE');
+
+                // Men� - Forzamos actualizaci�n con timestamp
+                const resM = await fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(SHEET_CSV + '&cache=' + Date.now()));
+                const csv = await resM.text();
+                const rows = csv.split(/\r?\n/).filter(r => r.trim() !== '');
+                
+                // QR
+                const row3 = rows[2].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const qrData = row3[13] ? row3[13].replace(/"/g,'').trim() : "https://instagram.com/fraisierpasteleria";
+                document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrData);
+
+                let h1 = "", h2 = "", currentCat = "", itemsInCat = 0, totalSlotsUsed = 0;
+                const LIMIT = 12; 
+
+                rows.slice(1).forEach(row => {
+                    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g,'').trim());
+                    
+                    // Verificamos que tenga datos suficientes
+                    if (cols.length >= 3) {
+                        const nombre = cols[0];
+                        const precioBs = cols[1];
+                        const categoria = cols[2];
+                        const precioUsd = cols[3] || "---"; // Captura Columna D o pone guiones
+
+                        if (parseFloat(precioBs.replace(',','.')) > 0) {
+                            if (categoria !== currentCat) {
+                                if (itemsInCat % 2 !== 0) { totalSlotsUsed++; }
+                                currentCat = categoria;
+                                itemsInCat = 0;
+                                let titleHtml = `<div class="dept-title">${currentCat}</div>`;
+                                totalSlotsUsed < LIMIT ? h1 += titleHtml : h2 += titleHtml;
+                            }
+
+                            let itemHtml = `
+                                <div class="menu-row">
+                                    <div class="dish-name">${nombre}</div>
+                                    <div class="price-container">
+                                        <div class="price-wrapper">
+                                            <span class="col-symbol">REF.</span>
+                                            <span class="col-price">${precioUsd}</span>
+                                        </div>
+                                        <div class="price-wrapper">
+                                            <span class="col-symbol">Bs.</span>
+                                            <span class="col-price">${precioBs}</span>
+                                        </div>
+                                    </div>
+                                </div>`;
+
+                            if (totalSlotsUsed < LIMIT) { h1 += itemHtml; } 
+                            else { h2 += itemHtml; }
+                            
+                            itemsInCat++;
+                            totalSlotsUsed++;
+                        }
+                    }
+                });
+
+                document.getElementById('page1').innerHTML = h1;
+                document.getElementById('page2').innerHTML = h2;
+            } catch (e) { console.error("Sync error:", e); }
+        }
+
+        updateData();
+        setInterval(() => renderRotation(document.getElementById('page2').innerHTML.length > 24), 2500);
+        setInterval(updateData, 60000);
+    </script>
+</body>
+</html>
