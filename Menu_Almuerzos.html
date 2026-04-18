@@ -180,73 +180,78 @@
         }
 
         async function updateData() {
-            try {
-                // Tasa
-                const resT = await fetch(API_DOLAR);
-                const dataT = await resT.json();
-                document.getElementById('t-bcv').innerText = dataT.promedio.toLocaleString('es-VE', {minimumFractionDigits: 2});
-                document.getElementById('f-bcv').innerText = new Date().toLocaleDateString('es-VE');
+    try {
+        // 1. Cargar el CSV del Menú
+        const resM = await fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(SHEET_CSV + '&cache=' + Date.now()));
+        const csv = await resM.text();
+        const rows = csv.split(/\r?\n/).filter(r => r.trim() !== '');
 
-                // Menú - Forzamos actualización con timestamp
-                const resM = await fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(SHEET_CSV + '&cache=' + Date.now()));
-                const csv = await resM.text();
-                const rows = csv.split(/\r?\n/).filter(r => r.trim() !== '');
-                
-                // QR
-                const row3 = rows[2].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-                const qrData = row3[13] ? row3[13].replace(/"/g,'').trim() : "https://instagram.com/fraisierpasteleria";
-                document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrData);
+        // --- NUEVA LÓGICA PARA LA TASA (Celda E2) ---
+        // Obtenemos la segunda fila (índice 1) y la dividimos por comas
+        const row2 = rows[1].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        // La celda E es la posición 4 (A=0, B=1, C=2, D=3, E=4)
+        const tasaManual = row2[4] ? row2[4].replace(/"/g,'').trim() : "---";
+        
+        // Actualizamos el recuadro de la tasa en el HTML
+        document.getElementById('t-bcv').innerText = tasaManual;
+        document.getElementById('f-bcv').innerText = new Date().toLocaleDateString('es-VE');
+        // --------------------------------------------
 
-                let h1 = "", h2 = "", currentCat = "", itemsInCat = 0, totalSlotsUsed = 0;
-                const LIMIT = 12; 
+        // 2. Procesar QR (Fila 3, Columna N)
+        const row3 = rows[2].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        const qrData = row3[13] ? row3[13].replace(/"/g,'').trim() : "https://instagram.com/fraisierpasteleria";
+        document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrData);
 
-                rows.slice(1).forEach(row => {
-                    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g,'').trim());
-                    
-                    if (cols.length >= 3) {
-                        const nombre = cols[0];
-                        const precioBs = cols[1];
-                        const categoria = cols[2];
-                        const precioUsd = cols[3] || "---";
+        let h1 = "", h2 = "", currentCat = "", itemsInCat = 0, totalSlotsUsed = 0;
+        const LIMIT = 12; 
 
-                        if (parseFloat(precioBs.replace(',','.')) > 0) {
-                            if (categoria !== currentCat) {
-                                if (itemsInCat % 2 !== 0) { totalSlotsUsed++; }
-                                currentCat = categoria;
-                                itemsInCat = 0;
-                                let titleHtml = `<div class="dept-title">${currentCat}</div>`;
-                                totalSlotsUsed < LIMIT ? h1 += titleHtml : h2 += titleHtml;
-                            }
+        rows.slice(1).forEach(row => {
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/"/g,'').trim());
+            
+            if (cols.length >= 3) {
+                const nombre = cols[0];
+                const precioBs = cols[1];
+                const categoria = cols[2];
+                const precioUsd = cols[3] || "---";
 
-                            let itemHtml = `
-                                <div class="menu-row">
-                                    <div class="dish-name">${nombre}</div>
-                                    <div class="price-container">
-                                        <div class="price-wrapper">
-                                            <span class="col-symbol">REF.</span>
-                                            <span class="col-price">${precioUsd}</span>
-                                        </div>
-                                        <div class="price-wrapper">
-                                            <span class="col-symbol">Bs.</span>
-                                            <span class="col-price">${precioBs}</span>
-                                        </div>
-                                    </div>
-                                </div>`;
-
-                            if (totalSlotsUsed < LIMIT) { h1 += itemHtml; } 
-                            else { h2 += itemHtml; }
-                            
-                            itemsInCat++;
-                            totalSlotsUsed++;
-                        }
+                // Solo mostrar si el precio en Bs es mayor a 0
+                if (parseFloat(precioBs.replace(',','.')) > 0) {
+                    if (categoria !== currentCat) {
+                        if (itemsInCat % 2 !== 0) { totalSlotsUsed++; }
+                        currentCat = categoria;
+                        itemsInCat = 0;
+                        let titleHtml = `<div class="dept-title">${currentCat}</div>`;
+                        totalSlotsUsed < LIMIT ? h1 += titleHtml : h2 += titleHtml;
                     }
-                });
 
-                document.getElementById('page1').innerHTML = h1;
-                document.getElementById('page2').innerHTML = h2;
-            } catch (e) { console.error("Sync error:", e); }
-        }
+                    let itemHtml = `
+                        <div class="menu-row">
+                            <div class="dish-name">${nombre}</div>
+                            <div class="price-container">
+                                <div class="price-wrapper">
+                                    <span class="col-symbol">REF.</span>
+                                    <span class="col-price">${precioUsd}</span>
+                                </div>
+                                <div class="price-wrapper">
+                                    <span class="col-symbol">Bs.</span>
+                                    <span class="col-price">${precioBs}</span>
+                                </div>
+                            </div>
+                        </div>`;
 
+                    if (totalSlotsUsed < LIMIT) { h1 += itemHtml; } 
+                    else { h2 += itemHtml; }
+                    
+                    itemsInCat++;
+                    totalSlotsUsed++;
+                }
+            }
+        });
+
+        document.getElementById('page1').innerHTML = h1;
+        document.getElementById('page2').innerHTML = h2;
+    } catch (e) { console.error("Sync error:", e); }
+}
         updateData();
         setInterval(() => renderRotation(document.getElementById('page2').innerHTML.length > 24), 2500);
         setInterval(updateData, 60000);
