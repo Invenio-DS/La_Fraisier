@@ -74,40 +74,45 @@
         }
         .dish-name { font-weight: bold; font-size: clamp(0.90rem, 1.2vw, 1.4rem); flex: 1; white-space: normal; line-height: 1.2; }
 
-        /* Contenedor que agrupa la columna de REF y la de Bs. */
+       /* Contenedor principal de precios */
 .price-container { 
     display: flex; 
-    gap: 1.5vw; 
+    gap: 1vw; /* Espacio entre la columna REF y la columna Bs */
     justify-content: flex-end; 
-    margin-left: 15px; 
+    margin-left: 10px;
 }
 
-/* Cada columna individual (la de REF y la de Bs.) */
+/* Base para ambas columnas */
 .price-wrapper { 
     display: flex; 
-    justify-content: space-between; /* Empuja símbolo a la izq y precio a la der */
+    justify-content: space-between; 
     align-items: baseline; 
-    width: 8vw; /* ANCHO FIJO: Esto es lo que alinea las columnas entre filas */
 }
 
-/* El símbolo (REF. / Bs.) */
+/* COLUMNA REF: Más estrecha (máximo 99,99) */
+.price-wrapper.ref-col { 
+    width: 6.5vw; /* Ajusta este valor si ves que el 99,99 queda apretado */
+}
+
+/* COLUMNA BS: Más ancha (hasta 100.000,00) */
+.price-wrapper.bs-col { 
+    width: 10.5vw; /* Más espacio para los números grandes en Bs. */
+}
+
 .col-symbol { 
     font-weight: bold; 
     font-size: clamp(0.70rem, 1.1vw, 1.3rem); 
     color: var(--accent-gold);
-    text-align: left;
-    flex-shrink: 0; /* Evita que el símbolo se encoja */
+    flex-shrink: 0;
 }
 
-/* El número del precio */
 .col-price { 
     font-weight: bold; 
     font-size: clamp(0.90rem, 1.3vw, 1.5rem); 
     color: var(--text-dark);
-    text-align: right; 
-    width: 100%; /* Toma el resto del espacio para empujar el texto */
+    text-align: right;
+    width: 100%;
 }
-
         /* --- PIE DE PÁGINA --- */
         .footer-contact { 
             flex-shrink: 0;
@@ -252,19 +257,19 @@
                     }
 
                     let itemHtml = `
-                        <div class="menu-row">
-                            <div class="dish-name">${nombre}</div>
-                            <div class="price-container">
-                                <div class="price-wrapper">
-                                    <span class="col-symbol">REF.</span>
-                                    <span class="col-price">${precioUsd}</span>
-                                </div>
-                                <div class="price-wrapper">
-                                    <span class="col-symbol">Bs.</span>
-                                    <span class="col-price">${precioBs}</span>
-                                </div>
-                            </div>
-                        </div>`;
+    <div class="menu-row">
+        <div class="dish-name">${nombre}</div>
+        <div class="price-container">
+            <div class="price-wrapper ref-col">
+                <span class="col-symbol">REF.</span>
+                <span class="col-price">${precioUsd}</span>
+            </div>
+            <div class="price-wrapper bs-col">
+                <span class="col-symbol">Bs.</span>
+                <span class="col-price">${precioBs}</span>
+            </div>
+        </div>
+    </div>`;
 
                     if (totalSlotsUsed < LIMIT) { h1 += itemHtml; } 
                     else { h2 += itemHtml; }
