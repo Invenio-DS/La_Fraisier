@@ -83,63 +83,74 @@
     </div>
 
     <script>
-        // PEGA AQUÍ TU URL DE LA WEB APP (.exec)
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwfHVSA-RuBHQ-F0hYzlJsfO-RwZKPvFhxQOYnyXZvt9tWxii06913-UFTb62OvM8Ax/exec";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwfHVSA-RuBHQ-F0hYzlJsfO-RwZKPvFhxQOYnyXZvt9tWxii06913-UFTb62OvM8Ax/exec";
 
-        async function updateData() {
-            try {
-                const res = await fetch(WEB_APP_URL);
-                const data = await res.json();
+    async function updateData() {
+        try {
+            const res = await fetch(WEB_APP_URL);
+            const data = await res.json();
+            console.log("Datos recibidos:", data); // Mira esto en F12 -> Consola
 
-                // Fila 2 (índice 1) para Tasa y Fila 3 (índice 2) para QR
-                const tasaManual = data[1] ? data[1][4] : "---";
-                document.getElementById('t-bcv').innerText = tasaManual;
-                document.getElementById('f-bcv').innerText = new Date().toLocaleDateString('es-VE');
+            // 1. TASA BCV (Fila 2 = índice 1, Columna E = índice 4)
+            const tasa = data[1] ? data[1][4] : "---";
+            document.getElementById('t-bcv').innerText = tasa;
+            document.getElementById('f-bcv').innerText = new Date().toLocaleDateString('es-VE');
 
-                const qrData = data[2] ? data[2][13] : "https://instagram.com/fraisierpasteleria";
-                document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrData);
+            // 2. QR (Fila 3 = índice 2, Columna N = índice 13)
+            const qrData = data[2] ? data[2][13] : "https://instagram.com/fraisierpasteleria";
+            document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrData);
 
-                let h1 = "", h2 = "", currentCat = "", totalSlotsUsed = 0;
-                const LIMIT = 12;
+            // 3. MENÚ (Empezamos a leer desde la fila 4 = índice 3)
+            let h1 = "", h2 = "", currentCat = "", totalSlotsUsed = 0;
+            const LIMIT = 12;
 
-                // Empezamos desde la fila 4 (índice 3) porque las anteriores son cabeceras
-                for(let i = 3; i < data.length; i++) {
-                    const [nombre, precioBs, categoria, precioUsd] = data[i];
-                    if (!nombre || parseFloat(precioBs) <= 0) continue;
+            for(let i = 3; i < data.length; i++) {
+                const fila = data[i];
+                const nombre = fila[0];
+                const precioBs = fila[1];
+                const categoria = fila[2];
+                const precioUsd = fila[3];
 
-                    if (categoria !== currentCat) {
-                        currentCat = categoria;
-                        let titleHtml = `<div class="dept-title">${currentCat}</div>`;
-                        totalSlotsUsed < LIMIT ? h1 += titleHtml : h2 += titleHtml;
-                    }
+                if (!nombre || nombre === "" || parseFloat(precioBs) <= 0) continue;
 
-                    let itemHtml = `
-                        <div class="menu-row">
-                            <div class="dish-name">${nombre}</div>
-                            <div class="price-container">
-                                <div class="price-wrapper ref-col"><span class="col-symbol">REF.</span><span class="col-price">${precioUsd || "---"}</span></div>
-                                <div class="price-wrapper bs-col"><span class="col-symbol">Bs.</span><span class="col-price">${precioBs}</span></div>
-                            </div>
-                        </div>`;
-
-                    totalSlotsUsed < LIMIT ? h1 += itemHtml : h2 += itemHtml;
-                    totalSlotsUsed++;
+                if (categoria !== currentCat) {
+                    currentCat = categoria;
+                    let titleHtml = `<div class="dept-title">${currentCat}</div>`;
+                    totalSlotsUsed < LIMIT ? h1 += titleHtml : h2 += titleHtml;
                 }
 
-                document.getElementById('page1').innerHTML = h1;
-                document.getElementById('page2').innerHTML = h2;
-            } catch (e) { console.error("Error:", e); }
-        }
+                let itemHtml = `
+                    <div class="menu-row">
+                        <div class="dish-name">${nombre}</div>
+                        <div class="price-container">
+                            <div class="price-wrapper ref-col"><span class="col-symbol">REF.</span><span class="col-price">${precioUsd || "---"}</span></div>
+                            <div class="price-wrapper bs-col"><span class="col-symbol">Bs.</span><span class="col-price">${precioBs}</span></div>
+                        </div>
+                    </div>`;
 
-        updateData();
-        setInterval(() => {
-            const hasTwo = document.getElementById('page2').innerHTML.length > 50;
-            const p = (new Date().getSeconds() < 20 || !hasTwo) ? 1 : 2;
-            document.getElementById('page1').classList.toggle('active', p === 1);
-            document.getElementById('page2').classList.toggle('active', p === 2);
-            document.getElementById('page-indicator').innerText = hasTwo ? `PAGINA ${p} / 2` : "";
-        }, 2500);
-        setInterval(updateData, 60000);
-    </script>
+                totalSlotsUsed < LIMIT ? h1 += itemHtml : h2 += itemHtml;
+                totalSlotsUsed++;
+            }
+
+            document.getElementById('page1').innerHTML = h1;
+            document.getElementById('page2').innerHTML = h2;
+        } catch (e) { 
+            console.error("Error al cargar el menú:", e); 
+        }
+    }
+
+    updateData();
+    // Refresco cada 1 minuto
+    setInterval(updateData, 60000);
+    
+    // Rotación de página
+    setInterval(() => {
+        const hasTwo = document.getElementById('page2').innerHTML.length > 50;
+        const p = (new Date().getSeconds() < 20 || !hasTwo) ? 1 : 2;
+        document.getElementById('page1').classList.toggle('active', p === 1);
+        document.getElementById('page2').classList.toggle('active', p === 2);
+        document.getElementById('page-indicator').innerText = hasTwo ? `PAGINA ${p} / 2` : "";
+    }, 2500);
+</script>
 </body>
 </html>
