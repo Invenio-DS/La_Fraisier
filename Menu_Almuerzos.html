@@ -89,29 +89,27 @@
         try {
             const res = await fetch(WEB_APP_URL);
             const data = await res.json();
-            console.log("Datos recibidos:", data); // Mira esto en F12 -> Consola
 
-            // 1. TASA BCV (Fila 2 = índice 1, Columna E = índice 4)
             const tasa = data[1] ? data[1][4] : "---";
             document.getElementById('t-bcv').innerText = tasa;
             document.getElementById('f-bcv').innerText = new Date().toLocaleDateString('es-VE');
 
-            // 2. QR (Fila 3 = índice 2, Columna N = índice 13)
             const qrData = data[2] ? data[2][13] : "https://instagram.com/fraisierpasteleria";
             document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(qrData);
 
-            // 3. MENÚ (Empezamos a leer desde la fila 4 = índice 3)
             let h1 = "", h2 = "", currentCat = "", totalSlotsUsed = 0;
             const LIMIT = 12;
 
             for(let i = 3; i < data.length; i++) {
                 const fila = data[i];
                 const nombre = fila[0];
-                const precioBs = fila[1];
                 const categoria = fila[2];
-                const precioUsd = fila[3];
+                
+                // Forzar 2 decimales y convertir punto a coma
+                const precioBs = (typeof fila[1] === 'number' ? fila[1] : parseFloat(fila[1] || 0)).toFixed(2).replace('.', ',');
+                const precioUsd = (typeof fila[3] === 'number' ? fila[3] : parseFloat(fila[3] || 0)).toFixed(2).replace('.', ',');
 
-                if (!nombre || nombre === "" || parseFloat(precioBs) <= 0) continue;
+                if (!nombre || nombre === "" || parseFloat(fila[1]) <= 0) continue;
 
                 if (categoria !== currentCat) {
                     currentCat = categoria;
@@ -123,7 +121,7 @@
                     <div class="menu-row">
                         <div class="dish-name">${nombre}</div>
                         <div class="price-container">
-                            <div class="price-wrapper ref-col"><span class="col-symbol">REF.</span><span class="col-price">${precioUsd || "---"}</span></div>
+                            <div class="price-wrapper ref-col"><span class="col-symbol">REF.</span><span class="col-price">${precioUsd}</span></div>
                             <div class="price-wrapper bs-col"><span class="col-symbol">Bs.</span><span class="col-price">${precioBs}</span></div>
                         </div>
                     </div>`;
@@ -134,16 +132,12 @@
 
             document.getElementById('page1').innerHTML = h1;
             document.getElementById('page2').innerHTML = h2;
-        } catch (e) { 
-            console.error("Error al cargar el menú:", e); 
-        }
+        } catch (e) { console.error("Error al cargar el menú:", e); }
     }
 
     updateData();
-    // Refresco cada 1 minuto
     setInterval(updateData, 60000);
     
-    // Rotación de página
     setInterval(() => {
         const hasTwo = document.getElementById('page2').innerHTML.length > 50;
         const p = (new Date().getSeconds() < 20 || !hasTwo) ? 1 : 2;
@@ -151,6 +145,6 @@
         document.getElementById('page2').classList.toggle('active', p === 2);
         document.getElementById('page-indicator').innerText = hasTwo ? `PAGINA ${p} / 2` : "";
     }, 2500);
-</script>
+    </script>
 </body>
 </html>
