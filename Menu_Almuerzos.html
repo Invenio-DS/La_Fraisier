@@ -101,18 +101,18 @@
             const LIMIT = 12;
 
             for(let i = 3; i < data.length; i++) {
-                const fila = data[i];
+                cconst fila = data[i];
                 const nombre = fila[0];
                 const categoria = fila[2];
-                
-                // Forzar 2 decimales y convertir punto a coma
-                const precioBs = (typeof fila[1] === 'number' ? fila[1] : parseFloat(fila[1] || 0)).toFixed(2).replace('.', ',');
-                const precioUsd = (typeof fila[3] === 'number' ? fila[3] : parseFloat(fila[3] || 0)).toFixed(2).replace('.', ',');
+
+                // Convertimos a número, redondeamos a 2 decimales y luego aplicamos formato con separador de miles
+                const valorBs = parseFloat(fila[1] || 0);
+                const valorUsd = parseFloat(fila[3] || 0);
 
                 const precioBs = valorBs.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 const precioUsd = valorUsd.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-                if (!nombre || nombre === "" || parseFloat(fila[1]) <= 0) continue;
+                if (!nombre || nombre === "" || valorBs <= 0) continue;
 
                 if (categoria !== currentCat) {
                     currentCat = categoria;
