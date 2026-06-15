@@ -109,6 +109,9 @@
                 const precioBs = (typeof fila[1] === 'number' ? fila[1] : parseFloat(fila[1] || 0)).toFixed(2).replace('.', ',');
                 const precioUsd = (typeof fila[3] === 'number' ? fila[3] : parseFloat(fila[3] || 0)).toFixed(2).replace('.', ',');
 
+                const precioBs = valorBs.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                const precioUsd = valorUsd.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
                 if (!nombre || nombre === "" || parseFloat(fila[1]) <= 0) continue;
 
                 if (categoria !== currentCat) {
